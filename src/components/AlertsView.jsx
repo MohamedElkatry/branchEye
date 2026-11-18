@@ -338,8 +338,8 @@ function AlertDrawer({ alert, neutral = false, onClose }) {
               <span className="rounded-lg bg-[#F6F6F6] px-2 py-0.5 text-[12px] font-medium leading-[1.5] text-[#4E505A]">{alert.branch}</span>
             </div>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="grid size-8 shrink-0 place-items-center rounded-xl border-[0.5px] border-[#E2DFDF] bg-[#F6F6F6]">
-            <img src="/figma/close.svg" alt="" className="size-6 max-w-none" />
+          <button type="button" onClick={onClose} aria-label="Close" className="grid size-8 shrink-0 place-items-center">
+            <img src="/figma/close.svg" alt="" className="size-7 max-w-none" />
           </button>
         </div>
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-6">

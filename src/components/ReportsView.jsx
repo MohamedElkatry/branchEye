@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ColumnSizer, ResizableTh, columnTableWidth, useResizableColumns } from "./columnResize";
 
 const templates = [
   {
@@ -61,6 +62,30 @@ const previewRows = [
 ];
 
 const metricGroups = ["Sales Metrics", "Cost Metrics", "Profitability", "Operations & Labor"];
+
+const metricsByGroup = {
+  "Sales Metrics": ["Gross Sales", "Net Sales", "Discounts", "Refunds"],
+  "Cost Metrics": ["COGS", "Wastes"],
+  "Profitability": ["Operating Contribution", "Margin %"],
+  "Operations & Labor": ["Labor"],
+};
+
+const branchOptions = ["All Branches", "Riyadh 01", "Jeddah 01", "Jeddah 02", "Dammam 01"];
+const pageSize = 7;
+
+function downloadFile(filename, lines) {
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function fileSlug(value) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "report";
+}
 
 function Badge({ children, tone = "gray" }) {
   const toneClass = tone === "blue" ? "bg-[#E3ECF2] text-[#4280A7]" : "bg-[#F6F6F6] text-[#4E505A]";
@@ -138,8 +163,13 @@ function Glyph({ name }) {
   }
   if (name === "filter") {
     return (
-      <svg {...common}>
-        <path d="M4 7h16M7 12h10M10 17h4" />
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M3 7H6" stroke="#262626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M3 17H9" stroke="#262626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M18 17H21" stroke="#262626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M15 7H21" stroke="#262626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M6 7C6 6.06812 6 5.60218 6.15224 5.23463C6.35523 4.74458 6.74458 4.35523 7.23463 4.15224C7.60218 4 8.06812 4 9 4C9.93188 4 10.3978 4 10.7654 4.15224C11.2554 4.35523 11.6448 4.74458 11.8478 5.23463C12 5.60218 12 6.06812 12 7C12 7.93188 12 8.39782 11.8478 8.76537C11.6448 9.25542 11.2554 9.64477 10.7654 9.84776C10.3978 10 9.93188 10 9 10C8.06812 10 7.60218 10 7.23463 9.84776C6.74458 9.64477 6.35523 9.25542 6.15224 8.76537C6 8.39782 6 7.93188 6 7Z" stroke="#262626" strokeWidth="1.5" />
+        <path d="M12 17C12 16.0681 12 15.6022 12.1522 15.2346C12.3552 14.7446 12.7446 14.3552 13.2346 14.1522C13.6022 14 14.0681 14 15 14C15.9319 14 16.3978 14 16.7654 14.1522C17.2554 14.3552 17.6448 14.7446 17.8478 15.2346C18 15.6022 18 16.0681 18 17C18 17.9319 18 18.3978 17.8478 18.7654C17.6448 19.2554 17.2554 19.6448 16.7654 19.8478C16.3978 20 15.9319 20 15 20C14.0681 20 13.6022 20 13.2346 19.8478C12.7446 19.6448 12.3552 19.2554 12.1522 18.7654C12 18.3978 12 17.9319 12 17Z" stroke="#262626" strokeWidth="1.5" />
       </svg>
     );
   }
@@ -187,15 +217,24 @@ function TemplateCard({ item, onOpen, onCustomize }) {
   );
 }
 
+function formatReportRange(start, end) {
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const format = (value) => {
+    const [year, month, day] = value.split("-");
+    return `${months[Number(month) - 1]} ${day}, ${year}`;
+  };
+  return `${format(start)} – ${format(end)}`;
+}
+
 function Frequency({ value, onChange }) {
   return (
-    <div className="flex h-10 overflow-hidden rounded-xl border border-[#E2DFDF]">
+    <div className="flex h-10 items-center rounded-xl border border-[#E2DFDF] p-1">
       {["Daily", "Weekly", "Monthly"].map((item) => (
         <button
           key={item}
           type="button"
           onClick={() => onChange(item)}
-          className={`flex-1 text-sm leading-[21px] ${value === item ? "bg-[#E3ECF2] font-semibold text-ink" : "font-medium text-[#4E505A]"}`}
+          className={`h-8 flex-1 rounded-lg text-sm leading-[21px] ${value === item ? "bg-[#F6F6F6] font-semibold text-ink" : "font-medium text-[#4E505A]"}`}
         >
           {item}
         </button>
@@ -204,19 +243,67 @@ function Frequency({ value, onChange }) {
   );
 }
 
+function OptionCheck({ checked, onClick, children, small = false }) {
+  return (
+    <button type="button" onClick={onClick} className={`flex items-center gap-2 text-left text-[#4E505A] ${small ? "text-[12px] leading-[18px]" : "text-sm leading-[21px]"}`}>
+      <span className={`grid size-[18px] shrink-0 place-items-center rounded-[4px] border ${checked ? "border-primary bg-primary text-white" : "border-[#E2DFDF] bg-white"}`}>
+        {checked && (
+          <svg viewBox="0 0 12 12" className="size-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M2.2 6.2 4.7 8.6 9.8 3.4" />
+          </svg>
+        )}
+      </span>
+      {children}
+    </button>
+  );
+}
+
 export default function ReportsView() {
   const [tab, setTab] = useState("all");
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [preview, setPreview] = useState(false);
+  const [preview, setPreview] = useState(null);
   const [customize, setCustomize] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [format, setFormat] = useState("PDF");
   const [freq, setFreq] = useState("Weekly");
   const [scheduleFreq, setScheduleFreq] = useState("Weekly");
   const [openGroup, setOpenGroup] = useState("Sales Metrics");
-  const [showScheduleFields, setShowScheduleFields] = useState(false);
+  const [showScheduleFields, setShowScheduleFields] = useState(true);
+  const [saveTemplate, setSaveTemplate] = useState(true);
+  const [extraTemplates, setExtraTemplates] = useState([]);
+  const [historyRows, setHistoryRows] = useState(history);
+  const [scheduleRows, setScheduleRows] = useState(schedules);
+  const [branchFilter, setBranchFilter] = useState("All Branches");
+  const [sortDir, setSortDir] = useState(null);
+  const [reportTitle, setReportTitle] = useState("");
+  const [rangeStart, setRangeStart] = useState("2026-10-01");
+  const [rangeEnd, setRangeEnd] = useState("2026-10-31");
+  const [rangeOpen, setRangeOpen] = useState(false);
+  const rangeRef = useRef(null);
+  const [branchChips, setBranchChips] = useState(["Riyadh 01", "Jeddah 02"]);
+  const [branchQuery, setBranchQuery] = useState("");
+  const [branchMenu, setBranchMenu] = useState(false);
+  const [scheduleDay, setScheduleDay] = useState("Every Sunday");
+  const [scheduleTime, setScheduleTime] = useState("09:00 AM");
+  const dateRange = formatReportRange(rangeStart, rangeEnd);
+  useEffect(() => {
+    if (!rangeOpen) return undefined;
+    const close = (event) => {
+      if (!rangeRef.current?.contains(event.target)) setRangeOpen(false);
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [rangeOpen]);
+  const [metricQuery, setMetricQuery] = useState("");
+  const [pickedMetrics, setPickedMetrics] = useState(["Net Sales", "COGS", "Wastes", "Labor", "Operating Contribution", "Margin %"]);
+  const [reportMetrics, setReportMetrics] = useState([]);
+  const [recipient, setRecipient] = useState("");
+  const [recipients, setRecipients] = useState(["You (Email)", "Ops Manager"]);
+  const [scheduleTemplate, setScheduleTemplate] = useState(templates[2].title);
+  const [scheduleBranch, setScheduleBranch] = useState("All Branches");
+  const [notice, setNotice] = useState("");
   const [runs, setRuns] = useState({
     "COGS & Waste Audit": true,
     "Daily Sales Snapshot": true,
@@ -225,25 +312,118 @@ export default function ReportsView() {
   });
   const [sourceFilter, setSourceFilter] = useState("All Sources");
   const [menu, setMenu] = useState(null);
+  const previewHeaders = ["Branch", "Net Sales", "COGS", "Wastes", "Labor", "Operating Contribution", "Margin %"].filter((label, index) => index === 0 || pickedMetrics.includes(label));
+  const historyColumns = useResizableColumns(7);
+  const scheduleColumns = useResizableColumns(8);
+  const previewColumns = useResizableColumns(previewHeaders.length);
 
   const rows = useMemo(() => {
-    const source = tab === "all" ? history : schedules;
+    const source = tab === "all" ? historyRows : scheduleRows;
     const text = query.trim().toLowerCase();
-    return source.filter((row) => {
+    const dateIndex = tab === "all" ? 4 : 5;
+    const filtered = source.filter((row) => {
       const matchesText = !text || row.join(" ").toLowerCase().includes(text);
-      if (tab !== "all" || sourceFilter === "All Sources") return matchesText;
-      if (sourceFilter === "Created by Me") return matchesText && row[2] === "You";
-      if (sourceFilter === "Shared with Me") return matchesText && row[3].startsWith("Shared");
-      return matchesText && row[2] === "Auto-Scheduled";
+      const branchValue = tab === "all" ? row[1] : row[3];
+      const matchesBranch = branchFilter === "All Branches" || branchValue === "All Branches" || branchValue.includes(branchFilter);
+      if (!matchesText || !matchesBranch) return false;
+      if (sourceFilter === "All Sources") return true;
+      if (tab === "all") {
+        if (sourceFilter === "Created by Me") return row[2] === "You";
+        if (sourceFilter === "Shared with Me") return row[3].startsWith("Shared");
+        return row[2] === "Auto-Scheduled";
+      }
+      if (sourceFilter === "Shared with Me") return row[4].startsWith("Shared");
+      if (sourceFilter === "Created by Me") return false;
+      return true;
     });
-  }, [query, tab, sourceFilter]);
+    if (!sortDir) return filtered;
+    return [...filtered].sort((left, right) => {
+      const diff = Date.parse(left[dateIndex]) - Date.parse(right[dateIndex]);
+      return sortDir === "asc" ? diff : -diff;
+    });
+  }, [query, tab, sourceFilter, historyRows, scheduleRows, branchFilter, sortDir]);
 
-  const visibleTemplates = expanded ? templates : templates.slice(0, 4);
+  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
+  const pagerCount = tab === "all" ? Math.max(3, pageCount) : pageCount;
+  const safePage = Math.min(page, pagerCount);
+  const pageRows = tab === "all" ? rows.slice((safePage - 1) * pageSize, safePage * pageSize) : rows;
+  const activeSchedules = rows.filter((row) => runs[row[0]] !== false).length;
+
+  function showNotice(message) {
+    setNotice(message);
+    window.setTimeout(() => setNotice(""), 1600);
+  }
+
+  function exportRow(row) {
+    const headers = tab === "all"
+      ? ["Report Name", "Branches", "Source", "Visibility", "Generated On", "Format"]
+      : ["Report Name", "Frequency", "Time", "Branches", "Visibility", "Next Run", "Format"];
+    downloadFile(`${fileSlug(row[0])}.csv`, [headers.join(","), row.map((cell) => `"${cell}"`).join(",")]);
+    setMenu(null);
+    showNotice("Downloaded");
+  }
+
+  function deleteRow(row) {
+    if (tab === "all") setHistoryRows((current) => current.filter((item) => item !== row));
+    else setScheduleRows((current) => current.filter((item) => item !== row));
+    setMenu(null);
+  }
+
+  async function shareRow(row) {
+    const text = `${row[0]} · ${tab === "all" ? row[1] : row[3]}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      showNotice("Copied");
+    } catch {
+      showNotice(text);
+    }
+    setMenu(null);
+  }
+
+  function addRecipient() {
+    const value = recipient.trim();
+    if (!value || recipients.includes(value)) return;
+    setRecipients((current) => [...current, value]);
+    setRecipient("");
+  }
+
+  function createReport() {
+    const title = reportTitle.trim() || "Custom Report";
+    const branches = branchChips.length ? branchChips.join(", ") : "All Branches";
+    setHistoryRows((current) => [[title, branches, "You", "Private", "Nov 18, 2026", format], ...current]);
+    const previewMetrics = reportMetrics.filter((metric) => ["Net Sales", "COGS", "Wastes", "Labor", "Operating Contribution", "Margin %"].includes(metric));
+    if (previewMetrics.length) setPickedMetrics(previewMetrics);
+    if (saveTemplate && ![...templates, ...extraTemplates].some((item) => item.title === title)) {
+      setExtraTemplates((current) => [...current, { title, body: "Custom report template.", icon: "settings", custom: true }]);
+    }
+    if (showScheduleFields) {
+      const day = scheduleDay.replace("Every ", "");
+      const frequency = freq === "Monthly" ? "Monthly · 1st" : freq === "Daily" ? "Daily" : `Weekly · ${day}`;
+      setScheduleRows((current) => [[title, frequency, scheduleTime, branches, "Private", "Nov 18, 2026", format], ...current]);
+      setRuns((current) => ({ ...current, [title]: true }));
+    }
+    setCustomize(false);
+    setTab("all");
+    setPage(1);
+    showNotice("Report added");
+  }
+
+  function saveSchedule() {
+    const frequency = scheduleFreq === "Monthly" ? "Monthly · 1st" : scheduleFreq === "Daily" ? "Daily" : "Weekly · Sunday";
+    setScheduleRows((current) => [[scheduleTemplate, frequency, "09:00 AM", scheduleBranch, "Private", "Nov 18, 2026", format], ...current]);
+    setRuns((current) => ({ ...current, [scheduleTemplate]: true }));
+    setScheduleOpen(false);
+    setTab("scheduled");
+    showNotice("Schedule added");
+  }
+
+  const allTemplates = [...templates, ...extraTemplates];
+  const visibleTemplates = expanded ? allTemplates : allTemplates.slice(0, 4);
 
   useEffect(() => {
     const onKey = (event) => {
       if (event.key !== "Escape") return;
-      if (preview) setPreview(false);
+      if (preview) setPreview(null);
       else if (customize) setCustomize(false);
       else if (scheduleOpen) setScheduleOpen(false);
     };
@@ -261,12 +441,12 @@ export default function ReportsView() {
           </button>
           <button type="button" onClick={() => { setTab("scheduled"); setQuery(""); setPage(1); }} className="relative flex h-11 items-center gap-1 px-0.5 pt-[11px] pb-3">
             <span className={`text-sm font-medium leading-[21px] ${tab === "scheduled" ? "text-primary" : "text-[#4E505A]"}`}>Scheduled</span>
-            <span className="grid size-[22px] place-items-center rounded-full bg-[#C4D8E4] text-[12px] font-medium text-primary">4</span>
+            <span className="grid size-[22px] place-items-center rounded-full bg-[#C4D8E4] text-[12px] font-medium text-primary">{scheduleRows.length}</span>
             {tab === "scheduled" && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-sm bg-primary" />}
           </button>
         </div>
         {tab === "all" ? (
-          <button type="button" onClick={() => { setShowScheduleFields(false); setCustomize(true); }} className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-white">
+          <button type="button" onClick={() => { setSaveTemplate(true); setShowScheduleFields(true); setRangeOpen(false); setCustomize(true); }} className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-white">
             Create Custom Report
             <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
               <path d="M8 3v10M3 8h10" />
@@ -292,7 +472,7 @@ export default function ReportsView() {
           </div>
           <div className="mt-4 grid grid-cols-4 gap-6">
             {visibleTemplates.map((item) => (
-              <TemplateCard key={item.title} item={item} onOpen={() => setPreview(true)} onCustomize={() => { setShowScheduleFields(false); setCustomize(true); }} />
+              <TemplateCard key={item.title} item={item} onOpen={() => setPreview({ name: item.title, branches: "All Branches" })} onCustomize={() => { setReportTitle(""); setSaveTemplate(true); setShowScheduleFields(true); setRangeOpen(false); setCustomize(true); }} />
             ))}
           </div>
         </section>
@@ -315,10 +495,22 @@ export default function ReportsView() {
               />
             </label>
             <>
-                <button type="button" className="inline-flex h-9 items-center gap-2 rounded-xl border border-[#E2DFDF] px-3 text-sm font-medium text-[#4E505A]">
-                  All Branches
-                  <img src="/figma/chevron.svg" alt="" className="size-4" />
-                </button>
+                <div className="relative">
+                  <button type="button" onClick={() => setMenu(menu === "branches" ? null : "branches")} className="inline-flex h-9 items-center gap-2 rounded-xl border border-[#E2DFDF] px-3 text-sm font-medium text-[#4E505A]">
+                    {branchFilter}
+                    <img src="/figma/chevron.svg" alt="" className={`size-4 ${menu === "branches" ? "rotate-180" : ""}`} />
+                  </button>
+                  {menu === "branches" && (
+                    <div className="absolute right-0 z-20 mt-2 w-[180px] rounded-xl border border-[#E2DFDF] bg-white p-1.5 shadow-[0_8px_24px_rgba(38,38,38,0.08)]">
+                      {branchOptions.map((item) => (
+                        <button key={item} type="button" onClick={() => { setBranchFilter(item); setMenu(null); setPage(1); }} className="flex h-10 w-full items-center justify-between rounded-lg px-3 text-left text-sm text-ink hover:bg-[#F8F6F6]">
+                          {item}
+                          {branchFilter === item && <span className="text-primary">✓</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div className="relative">
                   <button type="button" onClick={() => setMenu(menu === "sources" ? null : "sources")} className="inline-flex h-9 items-center justify-between gap-2 whitespace-nowrap rounded-xl border border-[#E2DFDF] px-3 text-sm font-medium text-[#4E505A]">
                     {sourceFilter}
@@ -346,49 +538,49 @@ export default function ReportsView() {
 
         <div className="mt-4 overflow-x-auto">
           {tab === "all" ? (
-            <table className="w-[1124px] table-fixed border-collapse text-left">
-              <colgroup>
-                <col className="w-[243px]" />
-                <col className="w-[171px]" />
-                <col className="w-[142px]" />
-                <col className="w-[142px]" />
-                <col className="w-[142px]" />
-                <col className="w-[142px]" />
-                <col className="w-[142px]" />
-              </colgroup>
-              <thead>
+            <table className={`table-fixed border-collapse text-left ${historyColumns.widths ? "" : "w-full"}`} style={historyColumns.widths ? { width: columnTableWidth(historyColumns.widths) } : undefined}>
+              <ColumnSizer widths={historyColumns.widths} />
+              <thead ref={historyColumns.headRef}>
                 <tr className="text-[12px] font-medium leading-[18px] text-[#4E505A]">
-                  {["Report Name", "Branches", "Source", "Visibility", "Generated On", "Format", "Action"].map((label) => (
-                    <th key={label} className="h-10 bg-[#F6F6F6] px-3 font-medium first:rounded-l-lg last:rounded-r-lg">
-                      <span className="inline-flex items-center gap-1">
-                        {label}
-                        {label === "Generated On" && <img src="/figma/sort.svg" alt="" className="size-4" />}
-                      </span>
-                    </th>
+                  {["Report Name", "Branches", "Source", "Visibility", "Generated On", "Format", "Action"].map((label, index) => (
+                    <ResizableTh key={label} index={index} onResizeStart={historyColumns.onResizeStart} className="h-10 bg-[#F6F6F6] px-3 font-medium first:rounded-l-lg last:rounded-r-lg">
+                      {label === "Generated On" ? (
+                        <button type="button" onClick={() => setSortDir((current) => (current === "desc" ? "asc" : "desc"))} className="inline-flex items-center gap-1 whitespace-nowrap font-medium">
+                          {label}
+                          <img src="/figma/sort.svg" alt="" className="size-4" />
+                        </button>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 whitespace-nowrap">{label}</span>
+                      )}
+                    </ResizableTh>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {page === 1 && rows.map((row, index) => (
-                  <tr key={row.join("-")} className="border-b border-[#F0EEEE] text-sm leading-[21px] text-ink">
-                    <td className="h-[55px] px-3 font-medium">{row[0]}</td>
-                    <td className="px-3 text-[#4E505A]">{row[1]}</td>
+                {pageRows.map((row, index) => (
+                  <tr key={`${row.join("-")}-${index}`} className="border-b border-[#F0EEEE] text-sm leading-[21px] text-ink">
+                    <td className="h-[55px] px-3 font-semibold">{row[0]}</td>
+                    <td className="whitespace-nowrap px-3 text-[#4E505A]">{row[1]}</td>
                     <td className="px-3 text-[#4E505A]">{row[2]}</td>
                     <td className="px-3"><Badge tone={row[3].startsWith("Shared") ? "blue" : "gray"}>{row[3]}</Badge></td>
-                    <td className="px-3 text-[#4E505A]">{row[4]}</td>
+                    <td className="whitespace-nowrap px-3 text-[#4E505A]">{row[4]}</td>
                     <td className="px-3"><Badge tone="blue">{row[5]}</Badge></td>
-                    <td className="relative px-3">
-                      <div className="flex items-center gap-1 text-[#4E505A]">
-                        <button type="button" aria-label="View" onClick={() => setPreview(true)} className="grid size-8 place-items-center rounded-lg hover:bg-[#F6F6F6]"><Glyph name="eye" /></button>
-                        <button type="button" aria-label="Download" onClick={() => setMenu(menu === `export-${index}` ? null : `export-${index}`)} className="grid size-8 place-items-center rounded-lg hover:bg-[#F6F6F6]">
-                          <img src="/figma/download.svg" alt="" className="size-[18px]" />
+                    <td className="relative whitespace-nowrap px-2">
+                      <div className="flex items-center gap-1.5 text-[#4E505A]">
+                        <button type="button" aria-label="View" onClick={() => setPreview({ name: row[0], branches: row[1] })} className="grid size-8 shrink-0 place-items-center rounded-lg border border-[#E2DFDF] bg-white hover:bg-[#F8F6F6]"><Glyph name="eye" /></button>
+                        <button type="button" aria-label="Download" onClick={() => setMenu(menu === `export-${index}` ? null : `export-${index}`)} className="grid size-8 shrink-0 place-items-center rounded-lg border border-[#E2DFDF] bg-white hover:bg-[#F8F6F6]">
+                          <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M12 4v10" />
+                            <path d="m8 10 4 4 4-4" />
+                            <path d="M5 18h14" />
+                          </svg>
                         </button>
-                        <button type="button" aria-label="More" onClick={() => setMenu(menu === `more-${index}` ? null : `more-${index}`)} className="grid size-8 place-items-center rounded-lg hover:bg-[#F6F6F6]"><Glyph name="more" /></button>
+                        <button type="button" aria-label="More" onClick={() => setMenu(menu === `more-${index}` ? null : `more-${index}`)} className="grid size-8 shrink-0 place-items-center rounded-lg border border-[#E2DFDF] bg-white hover:bg-[#F8F6F6]"><Glyph name="more" /></button>
                       </div>
                       {menu === `export-${index}` && (
                         <div className="absolute right-3 z-20 mt-1 w-[210px] rounded-xl border border-[#E2DFDF] bg-white p-1.5 shadow-[0_8px_24px_rgba(38,38,38,0.08)]">
                           {["Export as PDF (.pdf)", "Export as Excel (.xlsx)", "Export as CSV (.csv)"].map((item) => (
-                            <button key={item} type="button" onClick={() => setMenu(null)} className="flex h-10 w-full items-center gap-2 rounded-lg px-3 text-left text-sm text-ink hover:bg-[#F8F6F6]">
+                            <button key={item} type="button" onClick={() => exportRow(row)} className="flex h-10 w-full items-center gap-2 rounded-lg px-3 text-left text-sm text-ink hover:bg-[#F8F6F6]">
                               <img src="/figma/download.svg" alt="" className="size-4" />
                               {item}
                             </button>
@@ -397,8 +589,8 @@ export default function ReportsView() {
                       )}
                       {menu === `more-${index}` && (
                         <div className="absolute right-3 z-20 mt-1 w-[180px] rounded-xl border border-[#E2DFDF] bg-white p-1.5 shadow-[0_8px_24px_rgba(38,38,38,0.08)]">
-                          {[["Delete", "trash"], ["Share", "share"], ["Scheduled", "calendar"]].map(([item, icon]) => (
-                            <button key={item} type="button" onClick={() => setMenu(null)} className="flex h-10 w-full items-center gap-2 rounded-lg px-3 text-left text-sm text-ink hover:bg-[#F8F6F6]">
+                          {[["Delete", "trash", () => deleteRow(row)], ["Share", "share", () => shareRow(row)], ["Scheduled", "calendar", () => { setTab("scheduled"); setMenu(null); }]].map(([item, icon, action]) => (
+                            <button key={item} type="button" onClick={action} className="flex h-10 w-full items-center gap-2 rounded-lg px-3 text-left text-sm text-ink hover:bg-[#F8F6F6]">
                               <MenuGlyph name={icon} />
                               {item}
                             </button>
@@ -411,27 +603,22 @@ export default function ReportsView() {
               </tbody>
             </table>
           ) : (
-            <table className="w-[1124px] table-fixed border-collapse text-left">
-              <colgroup>
-                <col className="w-[198px]" />
-                <col className="w-[167px]" />
-                <col className="w-[167px]" />
-                <col className="w-[167px]" />
-                <col className="w-[167px]" />
-                <col className="w-[100px]" />
-                <col className="w-[100px]" />
-                <col className="w-[58px]" />
-              </colgroup>
-              <thead>
+            <table className={`table-fixed border-collapse text-left ${scheduleColumns.widths ? "" : "w-full min-w-[980px]"}`} style={scheduleColumns.widths ? { width: columnTableWidth(scheduleColumns.widths) } : undefined}>
+              <ColumnSizer widths={scheduleColumns.widths} />
+              <thead ref={scheduleColumns.headRef}>
                 <tr className="text-[12px] font-medium leading-[18px] text-[#4E505A]">
-                  {["Report Name", "Frequency & Time", "Branches", "Visibility", "Next Run", "Format", "Status Run", "Action"].map((label) => (
-                    <th key={label} className="h-10 bg-[#F6F6F6] px-3 font-medium first:rounded-l-lg last:rounded-r-lg">{label}</th>
+                  {["Report Name", "Frequency & Time", "Branches", "Visibility", "Next Run", "Format", "Status Run", "Action"].map((label, index) => (
+                    <ResizableTh key={label} index={index} onResizeStart={scheduleColumns.onResizeStart} className="h-10 bg-[#F6F6F6] px-3 font-medium first:rounded-l-lg last:rounded-r-lg">
+                      {label === "Next Run" ? (
+                        <button type="button" onClick={() => setSortDir((current) => (current === "desc" ? "asc" : "desc"))} className="inline-flex items-center gap-1 font-medium">{label}</button>
+                      ) : label}
+                    </ResizableTh>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
-                  <tr key={row[0]} className="border-b border-[#F0EEEE] text-sm leading-[21px] text-ink">
+                {pageRows.map((row, index) => (
+                  <tr key={`${row[0]}-${index}`} className="border-b border-[#F0EEEE] text-sm leading-[21px] text-ink">
                     <td className="h-[55px] px-3 font-semibold">{row[0]}</td>
                     <td className="px-3">
                       <div className="font-medium leading-[21px]">{row[1]}</div>
@@ -451,10 +638,20 @@ export default function ReportsView() {
                         <span className={`absolute top-0.5 size-4 rounded-full bg-white shadow-sm ${runs[row[0]] ? "left-[18px]" : "left-0.5"}`} />
                       </button>
                     </td>
-                    <td className="px-3">
-                      <button type="button" aria-label="More" className="grid size-8 place-items-center rounded-lg text-[#4E505A] hover:bg-[#F6F6F6]">
+                    <td className="relative px-3">
+                      <button type="button" aria-label="More" onClick={() => setMenu(menu === `schedule-more-${index}` ? null : `schedule-more-${index}`)} className="grid size-8 place-items-center rounded-lg text-[#4E505A] hover:bg-[#F6F6F6]">
                         <Glyph name="more" />
                       </button>
+                      {menu === `schedule-more-${index}` && (
+                        <div className="absolute right-3 z-20 mt-1 w-[180px] rounded-xl border border-[#E2DFDF] bg-white p-1.5 shadow-[0_8px_24px_rgba(38,38,38,0.08)]">
+                          {[["Delete", "trash", () => deleteRow(row)], ["Share", "share", () => shareRow(row)]].map(([item, icon, action]) => (
+                            <button key={item} type="button" onClick={action} className="flex h-10 w-full items-center gap-2 rounded-lg px-3 text-left text-sm text-ink hover:bg-[#F8F6F6]">
+                              <MenuGlyph name={icon} />
+                              {item}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -465,24 +662,27 @@ export default function ReportsView() {
 
         <div className="mt-4 flex items-center justify-between">
           <p className="text-[12px] leading-[18px] text-black/50">
-            {tab === "all" ? "Showing 7 of 24 reports" : `${schedules.length} schedules · ${Object.values(runs).filter(Boolean).length} active · ${Object.values(runs).filter((value) => !value).length} paused`}
+            {tab === "all"
+              ? `Showing ${pageRows.length} of ${query.trim() || branchFilter !== "All Branches" || sourceFilter !== "All Sources" ? rows.length : 24} reports`
+              : `${rows.length} schedules · ${activeSchedules} active · ${rows.length - activeSchedules} paused`}
+            {notice ? ` · ${notice}` : ""}
           </p>
           {tab === "all" && (
             <div className="flex items-center gap-1">
               <button type="button" aria-label="Previous page" onClick={() => setPage((value) => Math.max(1, value - 1))} className="grid size-8 place-items-center rounded-lg text-[#4E505A] hover:bg-[#F6F6F6]">
                 <img src="/figma/arrow-left.svg" alt="" className="size-[18px]" />
               </button>
-              {[1, 2, 3].map((number) => (
+              {Array.from({ length: pagerCount }, (_, index) => index + 1).map((number) => (
                 <button
                   key={number}
                   type="button"
                   onClick={() => setPage(number)}
-                  className={`grid size-8 place-items-center rounded-lg text-sm font-medium ${page === number ? "bg-primary text-white" : "text-[#4E505A] hover:bg-[#F6F6F6]"}`}
+                  className={`grid size-8 place-items-center rounded-lg text-sm font-medium ${safePage === number ? "bg-primary text-white" : "text-[#4E505A] hover:bg-[#F6F6F6]"}`}
                 >
                   {number}
                 </button>
               ))}
-              <button type="button" aria-label="Next page" onClick={() => setPage((value) => Math.min(3, value + 1))} className="grid size-8 place-items-center rounded-lg text-[#4E505A] hover:bg-[#F6F6F6]">
+              <button type="button" aria-label="Next page" onClick={() => setPage((value) => Math.min(pagerCount, value + 1))} className="grid size-8 place-items-center rounded-lg text-[#4E505A] hover:bg-[#F6F6F6]">
                 <img src="/figma/arrow-right.svg" alt="" className="size-[18px]" />
               </button>
             </div>
@@ -491,20 +691,20 @@ export default function ReportsView() {
       </section>
 
       {preview && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-[rgba(6,6,6,0.4)] p-6" onClick={() => setPreview(false)}>
+        <div className="fixed inset-0 z-50 grid place-items-center bg-[rgba(6,6,6,0.4)] p-6" onClick={() => setPreview(null)}>
           <section className="w-[860px] overflow-hidden rounded-2xl bg-white" onClick={(event) => event.stopPropagation()}>
             <header className="flex h-[72px] items-center justify-between border-b border-[#E2DFDF] px-6">
-              <h2 className="text-lg font-semibold leading-[27px]">Executive P&L Summary — Oct 2026</h2>
+              <h2 className="text-lg font-semibold leading-[27px]">{preview.name}</h2>
               <div className="flex items-center gap-2">
-                <button type="button" onClick={() => setPreview(false)} aria-label="Close" className="grid size-8 place-items-center">
-                  <img src="/figma/close.svg" alt="" className="size-6" />
+                <button type="button" onClick={() => setPreview(null)} aria-label="Close" className="grid size-8 place-items-center">
+                  <img src="/figma/close.svg" alt="" className="size-7" />
                 </button>
               </div>
             </header>
             <div className="px-6 py-6">
               <div className="flex items-center justify-between text-[12px] leading-[18px] text-black/50">
                 <span>Prepared Finance Manager</span>
-                <span>Period: Oct 31 – Nov 01, 2026 · All Branches</span>
+                <span>Period: {dateRange} · {preview.branches}</span>
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2.5">
                 {[["Net Sales", "3,530K SAR"], ["Operating Contribution", "923K SAR"], ["Operating Margin", "26.1%"]].map(([label, value]) => (
@@ -514,24 +714,27 @@ export default function ReportsView() {
                   </article>
                 ))}
               </div>
-              <table className="mt-4 w-full border-collapse text-left">
-                <thead>
+              <div className="mt-4 overflow-x-auto">
+              <table className={`border-collapse text-left table-fixed ${previewColumns.widths ? "" : "w-full"}`} style={previewColumns.widths ? { width: columnTableWidth(previewColumns.widths) } : undefined}>
+                <ColumnSizer widths={previewColumns.widths} />
+                <thead ref={previewColumns.headRef}>
                   <tr className="text-[12px] leading-[18px] text-[#4E505A]">
-                    {["Branch", "Net Sales", "COGS", "Wastes", "Labor", "Operating Contribution", "Margin %"].map((label) => (
-                      <th key={label} className="h-11 bg-[#F6F6F6] px-2 font-medium">{label}</th>
+                    {previewHeaders.map((label, index) => (
+                      <ResizableTh key={label} index={index} onResizeStart={previewColumns.onResizeStart} className="h-11 bg-[#F6F6F6] px-2 font-medium">{label}</ResizableTh>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {previewRows.map((row) => (
                     <tr key={row[0]} className="border-b border-[#E2DFDF] text-sm leading-[21px]">
-                      {row.map((cell, index) => (
-                        <td key={cell} className={`h-[38px] px-2 ${row[0] === "Total" ? "font-semibold" : ""} ${index === 6 ? "text-right" : ""}`}>{cell}</td>
+                      {row.filter((_, index) => index === 0 || pickedMetrics.includes(["Branch", "Net Sales", "COGS", "Wastes", "Labor", "Operating Contribution", "Margin %"][index])).map((cell, index) => (
+                        <td key={`${row[0]}-${cell}`} className={`h-[38px] px-2 ${row[0] === "Total" ? "font-semibold" : ""} ${index === 6 ? "text-right" : ""}`}>{cell}</td>
                       ))}
                     </tr>
                   ))}
                 </tbody>
               </table>
+              </div>
               <p className="mt-4 border-t border-[#E2DFDF] pt-4 text-sm leading-[21px] text-black/50">Confidential · Shared with you by Finance Manager</p>
             </div>
           </section>
@@ -540,55 +743,139 @@ export default function ReportsView() {
 
       {customize && (
         <div className="fixed inset-0 z-50 bg-[rgba(6,6,6,0.4)]" onClick={() => setCustomize(false)}>
-          <aside className="absolute inset-y-0 right-0 flex w-[480px] flex-col bg-white" onClick={(event) => event.stopPropagation()}>
+          <aside
+            className="absolute inset-y-0 right-0 flex w-[480px] flex-col bg-white"
+            onClick={(event) => {
+              event.stopPropagation();
+              if (rangeRef.current && !rangeRef.current.contains(event.target)) setRangeOpen(false);
+            }}
+            onMouseDown={(event) => {
+              if (rangeRef.current && !rangeRef.current.contains(event.target)) setRangeOpen(false);
+            }}
+          >
             <header className="flex h-16 items-center justify-between border-b border-[#E2DFDF] px-6">
               <h2 className="text-lg font-semibold leading-[27px]">Customize Report</h2>
               <button type="button" onClick={() => setCustomize(false)} aria-label="Close" className="grid size-8 place-items-center">
-                <img src="/figma/close.svg" alt="" className="size-6" />
+                <img src="/figma/close.svg" alt="" className="size-7" />
               </button>
             </header>
             <div className="flex-1 overflow-y-auto px-6 py-6">
               <label className="block text-sm leading-[21px]">Report Title</label>
-              <input defaultValue="Q4 Riyadh & Jeddah Waste Focus" className="mt-2 h-10 w-full rounded-xl border border-[#E2DFDF] px-3 text-sm outline-none" />
+              <input value={reportTitle} onChange={(event) => setReportTitle(event.target.value)} placeholder="Q4 Riyadh & Jeddah Waste Focus" className="mt-2 h-10 w-full rounded-xl border border-[#E2DFDF] px-3 text-sm outline-none placeholder:text-[#4E505A]" />
               <label className="mt-4 block text-sm leading-[21px]">Date Range</label>
-              <div className="mt-2 flex h-10 items-center gap-2 rounded-xl border border-[#E2DFDF] px-3 text-sm">
-                <span>Oct 01, 2026 – Oct 31, 2026</span>
+              <div className="relative mt-2" ref={rangeRef}>
+                <button type="button" onClick={() => setRangeOpen((value) => !value)} className="flex h-10 w-full items-center gap-2 rounded-xl border border-[#E2DFDF] px-3 text-left text-sm text-ink">
+                  <svg viewBox="0 0 24 24" className="size-6 shrink-0" fill="none" stroke="#262626" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
+                    <rect x="4" y="5" width="16" height="15" rx="2" />
+                    <path d="M8 3.5v3M16 3.5v3M4 10h16" />
+                  </svg>
+                  <span>{dateRange}</span>
+                </button>
+                {rangeOpen && (
+                  <div className="absolute z-20 mt-2 w-full rounded-xl border border-[#E2DFDF] bg-white p-3 shadow-[0_8px_24px_rgba(38,38,38,0.08)]">
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="text-[12px] leading-[18px] text-black/50">
+                        From
+                        <input type="date" value={rangeStart} max={rangeEnd} onChange={(event) => setRangeStart(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[#E2DFDF] px-2 text-sm text-ink" />
+                      </label>
+                      <label className="text-[12px] leading-[18px] text-black/50">
+                        To
+                        <input type="date" value={rangeEnd} min={rangeStart} onChange={(event) => setRangeEnd(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[#E2DFDF] px-2 text-sm text-ink" />
+                      </label>
+                    </div>
+                    <button type="button" onClick={() => setRangeOpen(false)} className="mt-3 h-9 w-full rounded-xl bg-primary text-sm font-medium text-white">Apply</button>
+                  </div>
+                )}
               </div>
               <label className="mt-4 block text-sm leading-[21px]">Branches</label>
-              <div className="mt-2 rounded-xl border border-[#E2DFDF] p-2">
-                <p className="px-1 py-1 text-[12px] leading-[18px] text-black/50">Search or select branches...</p>
+              <div className="relative mt-2 rounded-xl border border-[#E2DFDF] px-2 py-2">
+                <div className="flex flex-wrap gap-1">
+                  {branchChips.map((item) => (
+                    <span key={item} className="inline-flex h-[26px] items-center gap-1 rounded-lg bg-[#F6F6F6] px-2 text-[12px] text-[#4E505A]">
+                      {item}
+                      <button type="button" aria-label={`Remove ${item}`} onClick={() => setBranchChips((current) => current.filter((value) => value !== item))} className="text-sm leading-none">×</button>
+                    </span>
+                  ))}
+                </div>
+                <button type="button" onClick={() => setBranchMenu((value) => !value)} className="mt-2 flex h-6 w-full items-center justify-between text-left text-[12px] leading-[18px] text-black/50">
+                  Search or select branches...
+                  <img src="/figma/chevron.svg" alt="" className="size-6" />
+                </button>
+                {branchMenu && (
+                  <div className="absolute inset-x-0 top-full z-20 mt-1 rounded-xl border border-[#E2DFDF] bg-white p-2 shadow-[0_8px_24px_rgba(38,38,38,0.08)]">
+                    <input value={branchQuery} onChange={(event) => setBranchQuery(event.target.value)} placeholder="Search or select branches..." className="h-9 w-full rounded-lg border border-[#E2DFDF] px-2 text-sm outline-none" />
+                    <div className="mt-1">
+                      {branchOptions.filter((item) => item !== "All Branches" && !branchChips.includes(item) && item.toLowerCase().includes(branchQuery.trim().toLowerCase())).map((item) => (
+                        <button key={item} type="button" onClick={() => { setBranchChips((current) => [...current, item]); setBranchQuery(""); }} className="flex h-8 w-full items-center rounded-lg px-2 text-left text-sm text-ink hover:bg-[#F8F6F6]">{item}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <p className="mt-4 text-sm leading-[21px]">Included Metrics</p>
-              <div className="mt-2 flex h-10 items-center rounded-xl border border-[#E2DFDF] px-3 text-sm text-black/50">Search columns...</div>
-              <div className="mt-3 overflow-hidden rounded-xl border border-[#E2DFDF]">
+              <label className="mt-2 flex h-10 items-center gap-2 rounded-xl border border-[#E2DFDF] px-3">
+                <img src="/figma/search.svg" alt="" className="size-[18px]" />
+                <input value={metricQuery} onChange={(event) => setMetricQuery(event.target.value)} placeholder="Search columns..." className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-black/50" />
+              </label>
+              <div className="mt-4 overflow-hidden rounded-xl border border-[#E2DFDF]">
                 {metricGroups.map((group) => (
                   <div key={group} className="border-b border-[#E2DFDF] last:border-b-0">
                     <button type="button" onClick={() => setOpenGroup((current) => (current === group ? "" : group))} className="flex h-8 w-full items-center justify-between bg-[#F6F6F6] px-2 text-[12px] leading-[18px]">
                       {group}
-                      <img src="/figma/chevron.svg" alt="" className={`size-4 ${openGroup === group ? "rotate-180" : ""}`} />
+                      <img src="/figma/chevron.svg" alt="" className={`size-6 ${openGroup === group ? "rotate-180" : ""}`} />
                     </button>
+                    {openGroup === group && (
+                      <div className="flex flex-wrap gap-x-4 gap-y-2 px-2 py-2.5">
+                        {metricsByGroup[group].filter((metric) => metric.toLowerCase().includes(metricQuery.trim().toLowerCase())).map((metric) => (
+                          <OptionCheck key={metric} small checked={reportMetrics.includes(metric)} onClick={() => setReportMetrics((current) => (current.includes(metric) ? current.filter((item) => item !== metric) : [...current, metric]))}>
+                            {metric}
+                          </OptionCheck>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
               <p className="mt-4 text-sm leading-[21px]">Automation Options</p>
-              <button type="button" onClick={() => setShowScheduleFields((value) => !value)} className="mt-3 flex items-center gap-2 text-sm text-[#4E505A]">
-                <span className={`grid size-6 place-items-center rounded-md border ${showScheduleFields ? "border-primary bg-primary text-white" : "border-[#E2DFDF]"}`}>{showScheduleFields ? "✓" : ""}</span>
-              </button>
+              <div className="mt-3 flex flex-col gap-3">
+                <OptionCheck checked={saveTemplate} onClick={() => setSaveTemplate((value) => !value)}>Save as a reusable custom template</OptionCheck>
+                <OptionCheck checked={showScheduleFields} onClick={() => setShowScheduleFields((value) => !value)}>Schedule this report automatically</OptionCheck>
+              </div>
               {showScheduleFields && (
                 <div className="mt-4">
                   <Frequency value={freq} onChange={setFreq} />
                   <div className="mt-4 grid grid-cols-2 gap-3">
                     <label className="text-[12px] leading-[18px] text-black/50">
                       Day of Week
-                      <div className="mt-1 flex h-10 items-center justify-between rounded-xl border border-[#E2DFDF] px-3 text-sm text-ink">Every Sunday</div>
+                      <span className="relative mt-1 block">
+                        <select value={scheduleDay} onChange={(event) => setScheduleDay(event.target.value)} className="h-10 w-full appearance-none rounded-xl border border-[#E2DFDF] bg-white px-3 pr-9 text-sm text-ink">
+                          {["Every Sunday", "Every Monday", "Every Tuesday", "Every Wednesday", "Every Thursday", "Every Friday", "Every Saturday"].map((item) => <option key={item}>{item}</option>)}
+                        </select>
+                        <img src="/figma/chevron.svg" alt="" className="pointer-events-none absolute top-1/2 right-2 size-5 -translate-y-1/2" />
+                      </span>
                     </label>
                     <label className="text-[12px] leading-[18px] text-black/50">
                       Time
-                      <div className="mt-1 flex h-10 items-center justify-between rounded-xl border border-[#E2DFDF] px-3 text-sm text-ink">09:00 AM</div>
+                      <span className="relative mt-1 block">
+                        <select value={scheduleTime} onChange={(event) => setScheduleTime(event.target.value)} className="h-10 w-full appearance-none rounded-xl border border-[#E2DFDF] bg-white px-3 pr-9 text-sm text-ink">
+                          {["08:00 AM", "09:00 AM"].map((item) => <option key={item}>{item}</option>)}
+                        </select>
+                        <img src="/figma/chevron.svg" alt="" className="pointer-events-none absolute top-1/2 right-2 size-5 -translate-y-1/2" />
+                      </span>
                     </label>
                   </div>
                   <p className="mt-4 text-[12px] leading-[18px] text-black/50">Send Report To</p>
-                  <div className="mt-1 rounded-xl border border-[#E2DFDF] px-3 py-3 text-[12px] leading-[18px] text-black/50">Type name or email...</div>
+                  <div className="mt-1 rounded-xl border border-[#E2DFDF] px-2 py-2">
+                    <div className="flex flex-wrap gap-2">
+                      {recipients.map((item) => (
+                        <span key={item} className="inline-flex h-7 items-center gap-1.5 rounded-lg bg-[#E3ECF2] px-2 text-[12px] leading-[18px] text-ink">
+                          {item}
+                          <button type="button" aria-label={`Remove ${item}`} onClick={() => setRecipients((current) => current.filter((value) => value !== item))} className="text-sm leading-none text-[#4E505A]">×</button>
+                        </span>
+                      ))}
+                    </div>
+                    <input value={recipient} onChange={(event) => setRecipient(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addRecipient(); } }} placeholder="Type name or email..." className="mt-2 h-7 w-full bg-transparent px-1 text-sm text-ink outline-none placeholder:text-black/50" />
+                  </div>
                 </div>
               )}
             </div>
@@ -598,6 +885,7 @@ export default function ReportsView() {
                   <button key={item} type="button" onClick={() => setFormat(item)} className={`h-8 rounded-lg px-3 text-[12px] font-medium ${format === item ? "bg-[#E3ECF2] text-ink" : "text-[#4E505A]"}`}>{item}</button>
                 ))}
               </div>
+              <button type="button" onClick={createReport} className="inline-flex h-11 w-[88px] items-center justify-center rounded-xl bg-primary text-sm font-medium text-white">Create</button>
             </footer>
           </aside>
         </div>
@@ -609,18 +897,22 @@ export default function ReportsView() {
             <header className="flex items-start justify-between">
               <h2 className="text-[22px] font-semibold leading-[33px]">Schedule Automated Report</h2>
               <button type="button" onClick={() => setScheduleOpen(false)} aria-label="Close" className="grid size-8 place-items-center">
-                <img src="/figma/close.svg" alt="" className="size-6" />
+                <img src="/figma/close.svg" alt="" className="size-7" />
               </button>
             </header>
             <p className="mt-4 text-sm font-medium leading-[21px]">Step 1 Report & Scope</p>
             <div className="mt-4 grid grid-cols-2 gap-3">
               <label className="text-[12px] leading-[18px] text-black/50">
                 Report Template
-                <div className="mt-1 flex h-10 items-center rounded-xl border border-[#E2DFDF] px-3 text-sm text-ink">COGS & Waste Audit</div>
+                <select value={scheduleTemplate} onChange={(event) => setScheduleTemplate(event.target.value)} className="mt-1 flex h-10 w-full items-center rounded-xl border border-[#E2DFDF] px-3 text-sm text-ink">
+                  {allTemplates.map((item) => <option key={item.title}>{item.title}</option>)}
+                </select>
               </label>
               <label className="text-[12px] leading-[18px] text-black/50">
                 Branches
-                <div className="mt-1 flex h-10 items-center rounded-xl border border-[#E2DFDF] px-3 text-sm text-ink">All Branches</div>
+                <select value={scheduleBranch} onChange={(event) => setScheduleBranch(event.target.value)} className="mt-1 flex h-10 w-full items-center rounded-xl border border-[#E2DFDF] px-3 text-sm text-ink">
+                  {branchOptions.map((item) => <option key={item}>{item}</option>)}
+                </select>
               </label>
             </div>
             <p className="mt-4 text-sm font-medium leading-[21px]">Step 2 Frequency & Delivery Time</p>
@@ -639,7 +931,11 @@ export default function ReportsView() {
             </div>
             <p className="mt-4 text-sm font-medium leading-[21px]">Step 3 Recipients</p>
             <p className="mt-4 text-[12px] leading-[18px] text-black/50">Send Report To</p>
-            <div className="mt-1 rounded-xl border border-[#E2DFDF] px-3 py-3 text-[12px] leading-[18px] text-black/50">Type name or email...</div>
+            <input value={recipient} onChange={(event) => setRecipient(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addRecipient(); } }} placeholder="Type name or email..." className="mt-1 h-10 w-full rounded-xl border border-[#E2DFDF] px-3 text-sm outline-none placeholder:text-black/50" />
+            <div className="mt-6 flex justify-end gap-2">
+              <button type="button" onClick={() => setScheduleOpen(false)} className="inline-flex h-10 items-center justify-center rounded-xl border border-[#E2DFDF] px-4 text-sm font-medium text-[#4E505A]">Cancel</button>
+              <button type="button" onClick={saveSchedule} className="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-medium text-white">Save Schedule</button>
+            </div>
           </section>
         </div>
       )}

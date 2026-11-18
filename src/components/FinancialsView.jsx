@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { ColumnSizer, ResizableTh, columnTableWidth, useResizableColumns } from "./columnResize";
 import Menu from "./Menu";
 
 const waterfall = [
@@ -11,7 +12,7 @@ const waterfall = [
   { label: "Labor", value: "- 600 K", bar: 29, color: "#E7B0BA", box: 146, pin: "between", radius: "rounded-bl-[2px] rounded-tr-[2px]" },
   { label: "Rent", value: "- 350 K", bar: 23, color: "#E7B0BA", box: 117, pin: "between", radius: "rounded-bl-[2px] rounded-tr-[2px]" },
   { label: "Utilities", value: "- 40 K", bar: 11, color: "#E7B0BA", box: 94, pin: "between", radius: "rounded-bl-[1px] rounded-tr-[1px]" },
-  { label: "OPEX", value: "- 10 K", bar: 3, color: "#E7B0BA", box: 79, stack: 21, pin: "between", radius: "rounded-bl-[0.8px] rounded-tr-[0.8px]" },
+  { label: "OPEX", value: "- 10 K", bar: 8, color: "#E7B0BA", box: 79, stack: 32, pin: "between", radius: "rounded-bl-[2px] rounded-tr-[2px]" },
   { label: "Operating Contribution", value: "1,160 K", bar: 26, color: "#32607D", box: 89, stack: 57, pin: "between", radius: "rounded-tr-[2px] rounded-bl-[2px] rounded-br-[2px]", wide: true },
 ];
 
@@ -83,6 +84,7 @@ export default function FinancialsView({
 }) {
   const [unit, setUnit] = useState("sar");
   const [sort, setSort] = useState(null);
+  const columnResize = useResizableColumns(columns.length + 1);
 
   const rows = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -182,7 +184,7 @@ export default function FinancialsView({
                   <p className="whitespace-nowrap text-[12px] leading-[1.5] text-[#4E505A]">{item.value}</p>
                   <div className={`w-full ${item.radius}`} style={{ height: item.bar, backgroundColor: item.color }} />
                 </div>
-                <p className={`text-[12px] font-medium leading-[1.5] text-[#4E505A] ${item.wide ? "w-[136px] whitespace-nowrap" : "text-center"}`}>{item.label}</p>
+                <p className={`text-[12px] font-medium leading-[1.5] text-[#4E505A] ${item.wide ? "w-max whitespace-nowrap self-start text-left" : "text-center"}`}>{item.label}</p>
               </div>
             ))}
           </div>
@@ -337,17 +339,18 @@ export default function FinancialsView({
           </div>
         </div>
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[980px] border-separate border-spacing-0 text-left">
-            <thead>
+          <table className={`border-separate border-spacing-0 text-left table-fixed ${columnResize.widths ? "" : "w-full min-w-[980px]"}`} style={columnResize.widths ? { width: columnTableWidth(columnResize.widths) } : undefined}>
+            <ColumnSizer widths={columnResize.widths} />
+            <thead ref={columnResize.headRef}>
               <tr className="text-[12px] font-medium text-black/50">
-                <th className="h-10 border-b border-[#E2DFDF] pr-3 font-medium">Branch Name</th>
-                {columns.map((column) => (
-                  <th key={column.key} className={`h-10 border-b border-[#E2DFDF] px-3 font-medium ${column.total ? "border-l border-[#E2DFDF]" : ""}`}>
+                <ResizableTh index={0} onResizeStart={columnResize.onResizeStart} className="h-10 border-b border-[#E2DFDF] pr-3 font-medium">Branch Name</ResizableTh>
+                {columns.map((column, index) => (
+                  <ResizableTh key={column.key} index={index + 1} onResizeStart={columnResize.onResizeStart} className={`h-10 border-b border-[#E2DFDF] px-3 font-medium ${column.total ? "border-l border-[#E2DFDF]" : ""}`}>
                     <button type="button" onClick={() => toggleSort(column.key)} className={`inline-flex items-center gap-1 whitespace-nowrap ${column.total ? "text-sm font-semibold text-ink" : ""}`}>
                       {column.label}
                       <img src={column.active && !sort ? "/figma/sort-active.svg" : "/figma/sort.svg"} alt="" className="size-4 max-w-none" />
                     </button>
-                  </th>
+                  </ResizableTh>
                 ))}
               </tr>
             </thead>

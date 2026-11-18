@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ColumnSizer, ResizableTh, columnTableWidth, useResizableColumns } from "./columnResize";
 
 const sections = [
   { id: "account", group: "Account", label: "Account & Security" },
@@ -110,6 +111,8 @@ export default function SettingsView({ onClose }) {
   const [dialog, setDialog] = useState(null);
   const [branchQuery, setBranchQuery] = useState("");
   const [contact, setContact] = useState(null);
+  const leaderColumns = useResizableColumns(5);
+  const directoryColumns = useResizableColumns(4);
 
   useEffect(() => {
     function onKey(event) {
@@ -182,8 +185,8 @@ export default function SettingsView({ onClose }) {
               <h2 className="text-[18px] font-semibold leading-[27px]">{copy.title}</h2>
               <p className="text-[12px] leading-[18px] text-black/50">{copy.subtitle}</p>
             </div>
-            <button type="button" onClick={onClose} aria-label="Close" className="grid size-8 place-items-center rounded-xl border-[0.5px] border-[#E2DFDF] bg-[#F6F6F6]">
-              <img src="/figma/close.svg" alt="" className="size-6 max-w-none" />
+            <button type="button" onClick={onClose} aria-label="Close" className="grid size-8 place-items-center">
+              <img src="/figma/close.svg" alt="" className="size-7 max-w-none" />
             </button>
           </header>
 
@@ -312,21 +315,13 @@ export default function SettingsView({ onClose }) {
                 <article className="rounded-2xl border border-[#E2DFDF] px-[25px] py-[25px]">
                   <h3 className="text-sm font-semibold leading-[21px]">Department Leadership</h3>
                   <div className="mt-4 overflow-x-auto rounded-xl border border-[#E2DFDF]">
-                    <table className="w-[786px] table-fixed border-collapse text-left">
-                      <colgroup>
-                        <col className="w-[148px]" />
-                        <col className="w-[212px]" />
-                        <col className="w-[120px]" />
-                        <col className="w-[187px]" />
-                        <col className="w-[119px]" />
-                      </colgroup>
-                      <thead>
+                    <table className={`table-fixed border-collapse text-left ${leaderColumns.widths ? "" : "w-[786px]"}`} style={leaderColumns.widths ? { width: columnTableWidth(leaderColumns.widths) } : undefined}>
+                      <ColumnSizer widths={leaderColumns.widths} />
+                      <thead ref={leaderColumns.headRef}>
                         <tr className="text-[12px] leading-[15px] text-black/50">
-                          <th className="h-9 bg-[#F6F6F6] px-4 font-medium">Lead Name</th>
-                          <th className="h-9 bg-[#F6F6F6] px-4 font-medium">Role</th>
-                          <th className="h-9 bg-[#F6F6F6] px-4 font-medium">Direct Phone</th>
-                          <th className="h-9 bg-[#F6F6F6] px-4 font-medium">Email</th>
-                          <th className="h-9 bg-[#F6F6F6] px-4 text-center font-medium">Action</th>
+                          {["Lead Name", "Role", "Direct Phone", "Email", "Action"].map((label, index) => (
+                            <ResizableTh key={label} index={index} onResizeStart={leaderColumns.onResizeStart} className={`h-9 bg-[#F6F6F6] px-4 font-medium ${label === "Action" ? "text-center" : ""}`}>{label}</ResizableTh>
+                          ))}
                         </tr>
                       </thead>
                       <tbody>
@@ -365,19 +360,13 @@ export default function SettingsView({ onClose }) {
                     </label>
                   </div>
                   <div className="mt-4 overflow-x-auto rounded-xl border border-[#E2DFDF]">
-                    <table className="w-[849px] table-fixed border-collapse text-left">
-                      <colgroup>
-                        <col className="w-[186px]" />
-                        <col className="w-[231px]" />
-                        <col className="w-[309px]" />
-                        <col className="w-[123px]" />
-                      </colgroup>
-                      <thead>
+                    <table className={`table-fixed border-collapse text-left ${directoryColumns.widths ? "" : "w-[849px]"}`} style={directoryColumns.widths ? { width: columnTableWidth(directoryColumns.widths) } : undefined}>
+                      <ColumnSizer widths={directoryColumns.widths} />
+                      <thead ref={directoryColumns.headRef}>
                         <tr className="text-[12px] leading-[15px] text-black/50">
-                          <th className="h-9 bg-[#F6F6F6] px-4 font-medium">Branch & Status</th>
-                          <th className="h-9 bg-[#F6F6F6] px-4 font-medium">Location & Hours</th>
-                          <th className="h-9 bg-[#F6F6F6] px-4 font-medium">Branch Manager & Phones</th>
-                          <th className="h-9 bg-[#F6F6F6] px-4 text-center font-medium">Action</th>
+                          {["Branch & Status", "Location & Hours", "Branch Manager & Phones", "Action"].map((label, index) => (
+                            <ResizableTh key={label} index={index} onResizeStart={directoryColumns.onResizeStart} className={`h-9 bg-[#F6F6F6] px-4 font-medium ${label === "Action" ? "text-center" : ""}`}>{label}</ResizableTh>
+                          ))}
                         </tr>
                       </thead>
                       <tbody>
@@ -450,8 +439,8 @@ function PasswordDialog({ onClose }) {
       <form onSubmit={submit} onClick={(event) => event.stopPropagation()} className="w-[460px] max-w-[calc(100vw-32px)] rounded-[20px] bg-white p-[25px] shadow-[0_24px_60px_rgba(0,0,0,0.12)]">
         <div className="flex items-center justify-between">
           <h2 className="text-[18px] font-semibold leading-[27px]">Change Password</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="grid size-8 place-items-center rounded-xl border-[0.5px] border-[#E2DFDF] bg-[#F6F6F6]">
-            <img src="/figma/close.svg" alt="" className="size-6 max-w-none" />
+          <button type="button" onClick={onClose} aria-label="Close" className="grid size-8 place-items-center">
+            <img src="/figma/close.svg" alt="" className="size-7 max-w-none" />
           </button>
         </div>
         <label className="mt-5 block">
@@ -493,8 +482,8 @@ function TwoFactorDialog({ onClose }) {
       <div onClick={(event) => event.stopPropagation()} className="w-[460px] max-w-[calc(100vw-32px)] rounded-[20px] bg-white p-[25px] shadow-[0_24px_60px_rgba(0,0,0,0.12)]">
         <div className="flex items-center justify-between">
           <h2 className="text-[18px] font-semibold leading-[27px]">Two-Factor Authentication</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="grid size-8 place-items-center rounded-xl border-[0.5px] border-[#E2DFDF] bg-[#F6F6F6]">
-            <img src="/figma/close.svg" alt="" className="size-6 max-w-none" />
+          <button type="button" onClick={onClose} aria-label="Close" className="grid size-8 place-items-center">
+            <img src="/figma/close.svg" alt="" className="size-7 max-w-none" />
           </button>
         </div>
         <p className="mt-5 text-sm leading-[21px] text-[#4E505A]">Scan this QR code to link your executive account.</p>
@@ -562,8 +551,8 @@ function ContactDialog({ person, onClose }) {
             <h2 className="text-[18px] font-semibold leading-[27px]">{person.name}</h2>
             <p className="text-[12px] leading-[18px] text-black/50">{person.role}</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="grid size-8 place-items-center rounded-xl border-[0.5px] border-[#E2DFDF] bg-[#F6F6F6]">
-            <img src="/figma/close.svg" alt="" className="size-6 max-w-none" />
+          <button type="button" onClick={onClose} aria-label="Close" className="grid size-8 place-items-center">
+            <img src="/figma/close.svg" alt="" className="size-7 max-w-none" />
           </button>
         </div>
         {person.manager && <p className="mt-4 text-sm font-medium">{person.manager}</p>}

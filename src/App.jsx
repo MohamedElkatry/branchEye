@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ColumnSizer, ResizableTh, columnTableWidth, useResizableColumns } from "./components/columnResize";
 import Icon from "./components/Icon";
 import AlertsView from "./components/AlertsView";
 import FinancialsView from "./components/FinancialsView";
@@ -59,6 +60,19 @@ const navIcons = {
   reports: "/figma/nav-reports.svg",
 };
 
+function NavIcon({ src }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="size-6 shrink-0 bg-current"
+      style={{
+        WebkitMask: `url(${src}) center / contain no-repeat`,
+        mask: `url(${src}) center / contain no-repeat`,
+      }}
+    />
+  );
+}
+
 const pageTitles = {
   overview: "Overview",
   performance: "Branches Performance",
@@ -111,6 +125,7 @@ export default function App() {
   const [notesOpen, setNotesOpen] = useState(false);
   const menusRef = useRef(null);
   const notesRef = useRef(null);
+  const summaryColumns = useResizableColumns(5);
 
   useEffect(() => {
     function onPointerDown(event) {
@@ -186,6 +201,19 @@ export default function App() {
 
   const pageTitle = pageTitles[activeNav] ?? current.label;
 
+  function downloadOverview() {
+    const metricLines = cards.map((card) => `${card.label},"${card.value}"`);
+    const header = ["Branch", "Sales", "Orders", "Budget %", "Contribution", "Margin", "Status"];
+    const branchLines = visibleBranches.map((item) => [item.name, item.sales, item.orders, item.budget, item.contribution, item.margin, item.status].join(","));
+    const blob = new Blob([["Metric,Value", ...metricLines, "", header.join(","), ...branchLines].join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "overview-report.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="flex min-h-screen bg-[#F8F6F6] text-ink">
       <aside className={`sticky top-0 flex h-screen shrink-0 flex-col justify-between border-r-[0.5px] border-[#E2DFDF] bg-white shadow-[2px_0_6px_rgba(184,153,235,0.05)] ${sidebarCollapsed ? "w-[72px]" : "w-[218px]"}`}>
@@ -215,7 +243,7 @@ export default function App() {
                     sidebarCollapsed ? "w-10 justify-center px-0" : "w-full"
                   } ${active ? "bg-[#E3ECF2] text-primary" : "text-[#4E505A] hover:bg-[#F6F6F6]"}`}
                 >
-                  <img src={navIcons[item.id]} alt="" className="size-6 max-w-none shrink-0" />
+                  <NavIcon src={navIcons[item.id]} />
                   {!sidebarCollapsed && item.label}
                 </button>
               );
@@ -231,7 +259,7 @@ export default function App() {
               sidebarCollapsed ? "justify-center" : "px-6"
             } ${settingsOpen ? "bg-[#E3ECF2] text-primary" : "text-[#4E505A] hover:bg-[#F6F6F6]"}`}
           >
-            <img src="/figma/nav-settings.svg" alt="" className="size-6 max-w-none shrink-0" />
+            <NavIcon src="/figma/nav-settings.svg" />
             {!sidebarCollapsed && settingsItem.label}
           </button>
           <button
@@ -385,6 +413,7 @@ export default function App() {
                 />
                 <button
                   type="button"
+                  onClick={downloadOverview}
                   className="ml-auto inline-flex h-11 items-center gap-2 rounded-xl border border-primary bg-[#F8F6F6] p-3 text-sm font-medium text-primary"
                 >
                   Export Report
@@ -485,14 +514,13 @@ export default function App() {
                     </button>
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full min-w-[640px] text-left text-sm">
-                      <thead className="text-[12px] text-muted">
+                    <table className={`table-fixed text-left text-sm ${summaryColumns.widths ? "" : "w-full min-w-[640px]"}`} style={summaryColumns.widths ? { width: columnTableWidth(summaryColumns.widths) } : undefined}>
+                      <ColumnSizer widths={summaryColumns.widths} />
+                      <thead ref={summaryColumns.headRef} className="text-[12px] text-muted">
                         <tr className="border-b border-line">
-                          <th className="pb-3 font-medium">Branch Name</th>
-                          <th className="pb-3 font-medium">Sales (SAR)</th>
-                          <th className="pb-3 font-medium">Budget Achievement %</th>
-                          <th className="pb-3 font-medium">Operating Contribution</th>
-                          <th className="pb-3 font-medium">Status</th>
+                          {["Branch Name", "Sales (SAR)", "Budget Achievement %", "Operating Contribution", "Status"].map((label, index) => (
+                            <ResizableTh key={label} index={index} onResizeStart={summaryColumns.onResizeStart} className="pb-3 font-medium">{label}</ResizableTh>
+                          ))}
                         </tr>
                       </thead>
                       <tbody>
@@ -648,7 +676,7 @@ function AiDrawer({ onClose }) {
             )}
           </button>
           <button type="button" onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-black/5" aria-label="Close">
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
               <path d="M7 7l10 10M17 7L7 17" />
             </svg>
           </button>

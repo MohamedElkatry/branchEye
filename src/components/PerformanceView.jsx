@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { ColumnSizer, ResizableTh, columnTableWidth, useResizableColumns } from "./columnResize";
 import { branchProfiles, branches, formatNumber, formatSigned, performanceRows } from "../dashboardData";
 import Icon from "./Icon";
 import Menu from "./Menu";
@@ -174,6 +175,7 @@ export default function PerformanceView({
   const [copied, setCopied] = useState(false);
   const [shareText, setShareText] = useState("");
   const [selectedBranch, setSelectedBranch] = useState(null);
+  const columns = useResizableColumns(sortColumns.length + 2);
 
   useEffect(() => {
     if (!selectedBranch) return undefined;
@@ -300,6 +302,7 @@ export default function PerformanceView({
         />
         <button
           type="button"
+          onClick={downloadSummary}
           className="ml-auto inline-flex h-11 items-center gap-2 rounded-xl border border-primary bg-[#F8F6F6] p-3 text-sm font-medium text-primary"
         >
           Export Report
@@ -332,18 +335,19 @@ export default function PerformanceView({
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] border-separate border-spacing-0 text-left">
-            <thead className="text-[12px] font-medium leading-[1.5] text-black/50">
+          <table className={`border-separate border-spacing-0 text-left table-fixed ${columns.widths ? "" : "w-full min-w-[980px]"}`} style={columns.widths ? { width: columnTableWidth(columns.widths) } : undefined}>
+            <ColumnSizer widths={columns.widths} />
+            <thead ref={columns.headRef} className="text-[12px] font-medium leading-[1.5] text-black/50">
               <tr>
-                <th className="h-10 border-b border-[#E2DFDF] pr-3 font-medium">Branch Name</th>
-                {sortColumns.map((column) => (
-                  <th key={column.key} className="h-10 border-b border-[#E2DFDF] px-3 font-medium">
+                <ResizableTh index={0} onResizeStart={columns.onResizeStart} className="h-10 border-b border-[#E2DFDF] pr-3 font-medium">Branch Name</ResizableTh>
+                {sortColumns.map((column, index) => (
+                  <ResizableTh key={column.key} index={index + 1} onResizeStart={columns.onResizeStart} className="h-10 border-b border-[#E2DFDF] px-3 font-medium">
                     <button type="button" onClick={() => toggleSort(column.key)} className="whitespace-nowrap font-medium">
                       {column.label}
                     </button>
-                  </th>
+                  </ResizableTh>
                 ))}
-                <th className="h-10 border-b border-[#E2DFDF] px-3 font-medium">Status</th>
+                <ResizableTh index={sortColumns.length + 1} onResizeStart={columns.onResizeStart} className="h-10 border-b border-[#E2DFDF] px-3 font-medium">Status</ResizableTh>
               </tr>
             </thead>
             <tbody>
@@ -468,10 +472,10 @@ function BranchCard({ branch, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-7 top-7 grid h-10 w-10 place-items-center rounded-full bg-[#F6F6F6] text-muted"
+          className="absolute right-7 top-7 grid h-10 w-10 place-items-center text-muted"
           aria-label="Close"
         >
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
+          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
             <path d="M7 7l10 10M17 7 7 17" />
           </svg>
         </button>
