@@ -28,7 +28,7 @@ const monitored = ["All Branches", "Riyadh 01", "Jeddah 01", "Jeddah 02", "Damma
 function SelectField({ value, options, onChange }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="relative w-[240px] shrink-0">
+    <div className="relative w-[240px] shrink-0 max-sm:w-full">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
@@ -66,7 +66,7 @@ function TextField({ value, onChange, type = "text" }) {
       type={type}
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="h-10 w-[240px] shrink-0 rounded-xl border border-[#E2DFDF] bg-white px-3 text-sm font-medium text-ink outline-none"
+      className="h-10 w-[240px] shrink-0 rounded-xl border border-[#E2DFDF] bg-white px-3 text-sm font-medium text-ink outline-none max-sm:w-full"
     />
   );
 }
@@ -148,15 +148,15 @@ export default function SettingsView({ onClose }) {
   return (
     <div className="fixed inset-0 z-50 bg-[rgba(6,6,6,0.4)]" onClick={onClose}>
       <div
-        className="absolute top-1/2 left-1/2 flex h-[min(680px,calc(100vh-48px))] w-[min(1040px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[20px] border border-[#E2DFDF] bg-white shadow-[0_24px_60px_rgba(0,0,0,0.12)]"
+        className="absolute top-1/2 left-1/2 flex h-[min(680px,calc(100vh-48px))] w-[min(1040px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[20px] border border-[#E2DFDF] bg-white shadow-[0_24px_60px_rgba(0,0,0,0.12)] max-md:h-[calc(100dvh-32px)] max-md:flex-col"
         onClick={(event) => event.stopPropagation()}
       >
-        <aside className="flex w-[224px] shrink-0 flex-col justify-between border-r border-[#E2DFDF] bg-[#F8F6F6] py-6">
-          <div className="flex flex-col gap-5 px-3.5">
+        <aside className="flex w-[224px] shrink-0 flex-col justify-between border-r border-[#E2DFDF] bg-[#F8F6F6] py-6 max-md:w-full max-md:overflow-x-auto max-md:border-r-0 max-md:border-b max-md:py-3">
+          <div className="flex flex-col gap-5 px-3.5 max-md:flex-row max-md:gap-4">
             {["Account", "Organization"].map((group) => (
-              <div key={group}>
+              <div key={group} className="max-md:shrink-0">
                 <p className="px-3 text-[11px] leading-[14px] tracking-[0.04em] text-black/40 uppercase">{group}</p>
-                <div className="mt-0">
+                <div className="mt-0 max-md:flex max-md:gap-1">
                   {sections
                     .filter((item) => item.group === group)
                     .map((item) => (
@@ -164,7 +164,7 @@ export default function SettingsView({ onClose }) {
                         key={item.id}
                         type="button"
                         onClick={() => setSection(item.id)}
-                        className={`flex h-10 w-full items-center rounded-xl px-3 text-left text-sm leading-[21px] ${section === item.id ? "bg-white font-semibold text-ink" : "font-medium text-[#4E505A] hover:bg-white/70"}`}
+                        className={`flex h-10 w-full items-center rounded-xl px-3 text-left text-sm leading-[21px] max-md:w-auto max-md:whitespace-nowrap ${section === item.id ? "bg-white font-semibold text-ink" : "font-medium text-[#4E505A] hover:bg-white/70"}`}
                       >
                         {item.label}
                       </button>
@@ -173,14 +173,14 @@ export default function SettingsView({ onClose }) {
               </div>
             ))}
           </div>
-          <div className="mx-3.5 rounded-xl border border-[#E2DFDF] px-3 py-3">
+          <div className="mx-3.5 rounded-xl border border-[#E2DFDF] px-3 py-3 max-md:hidden">
             <p className="text-[12px] font-medium leading-[18px] text-ink">Role: CEO</p>
             <p className="text-[12px] leading-[18px] text-black/50">Executive View Access</p>
           </div>
         </aside>
 
         <section className="flex min-w-0 flex-1 flex-col">
-          <header className="flex h-[86px] shrink-0 items-center justify-between border-b border-[#E2DFDF] px-6">
+          <header className="flex h-[86px] shrink-0 items-center justify-between gap-3 border-b border-[#E2DFDF] px-6 max-md:h-auto max-md:px-4 max-md:py-3">
             <div>
               <h2 className="text-[18px] font-semibold leading-[27px]">{copy.title}</h2>
               <p className="text-[12px] leading-[18px] text-black/50">{copy.subtitle}</p>
@@ -190,26 +190,26 @@ export default function SettingsView({ onClose }) {
             </button>
           </header>
 
-          <div className="min-h-0 flex-1 overflow-auto px-6 py-6">
+          <div className="min-h-0 flex-1 overflow-auto px-6 py-6 max-sm:px-4 max-sm:py-4">
             {section === "account" && (
               <div className="flex flex-col gap-5">
-                <article className="rounded-2xl border border-[#E2DFDF] px-[25px] pt-[25px] pb-4">
+                <article className="rounded-2xl border border-[#E2DFDF] px-[25px] max-sm:px-4 pt-[25px] pb-4">
                   <h3 className="text-sm font-semibold leading-[21px]">Executive Profile</h3>
-                  <div className="mt-4 flex items-center justify-between gap-6 border-b border-[#E2DFDF] py-2">
+                  <div className="mt-4 flex items-center justify-between gap-6 max-sm:flex-col max-sm:items-stretch max-sm:gap-2 border-b border-[#E2DFDF] py-2">
                     <div>
                       <p className="text-sm font-medium leading-[21px]">Full Name</p>
                       <p className="text-[12px] leading-[18px] text-black/50">Displayed across shared reports and executive summaries</p>
                     </div>
                     <TextField value={name} onChange={setName} />
                   </div>
-                  <div className="flex items-center justify-between gap-6 border-b border-[#E2DFDF] py-2">
+                  <div className="flex items-center justify-between gap-6 max-sm:flex-col max-sm:items-stretch max-sm:gap-2 border-b border-[#E2DFDF] py-2">
                     <div>
                       <p className="text-sm font-medium leading-[21px]">Official Email</p>
                       <p className="text-[12px] leading-[18px] text-black/50">Primary sign-in and report delivery address</p>
                     </div>
                     <TextField value={email} onChange={setEmail} type="email" />
                   </div>
-                  <div className="flex items-center justify-between gap-6 py-2">
+                  <div className="flex items-center justify-between gap-6 max-sm:flex-col max-sm:items-stretch max-sm:gap-2 py-2">
                     <div>
                       <p className="text-sm font-medium leading-[21px]">Account Password</p>
                       <p className="text-[12px] leading-[18px] text-black/50">Last changed 45 days ago</p>
@@ -218,11 +218,11 @@ export default function SettingsView({ onClose }) {
                   </div>
                 </article>
 
-                <article className="rounded-2xl border border-[#E2DFDF] px-[25px] pt-[25px] pb-4">
+                <article className="rounded-2xl border border-[#E2DFDF] px-[25px] max-sm:px-4 pt-[25px] pb-4">
                   <h3 className="text-sm font-semibold leading-[21px]">Security & Active Sessions</h3>
-                  <div className="mt-4 flex items-center justify-between gap-6 border-b border-[#E2DFDF] py-2">
+                  <div className="mt-4 flex items-center justify-between gap-6 max-sm:flex-col max-sm:items-stretch max-sm:gap-2 border-b border-[#E2DFDF] py-2">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm font-medium leading-[21px]">Two-Factor Authentication (2FA)</p>
                         <span className="rounded-lg bg-[#E3F7E4] px-2.5 py-0.5 text-[12px] font-medium leading-[18px] text-[#359839]">Enabled</span>
                       </div>
@@ -231,9 +231,9 @@ export default function SettingsView({ onClose }) {
                     <OutlineButton onClick={() => setDialog("2fa")}>Manage</OutlineButton>
                   </div>
                   {sessions.map((item) => (
-                    <div key={item.id} className={`flex items-center justify-between gap-6 py-2 ${item.current ? "border-b border-[#E2DFDF]" : ""}`}>
+                    <div key={item.id} className={`flex items-center justify-between gap-6 max-sm:flex-col max-sm:items-stretch max-sm:gap-2 py-2 ${item.current ? "border-b border-[#E2DFDF]" : ""}`}>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <p className="text-sm font-medium leading-[21px]">{item.title}</p>
                           {item.current && <span className="rounded-lg bg-[#E3ECF2] px-2 py-0.5 text-[12px] font-medium leading-[18px] text-[#32607D]">Current Session</span>}
                         </div>
@@ -244,23 +244,23 @@ export default function SettingsView({ onClose }) {
                   ))}
                 </article>
 
-                <article className="rounded-2xl border border-[#E2DFDF] px-[25px] pt-[25px] pb-4">
+                <article className="rounded-2xl border border-[#E2DFDF] px-[25px] max-sm:px-4 pt-[25px] pb-4">
                   <h3 className="text-sm font-semibold leading-[21px]">Workspace Preferences</h3>
-                  <div className="mt-4 flex items-center justify-between gap-6 border-b border-[#E2DFDF] py-2">
+                  <div className="mt-4 flex items-center justify-between gap-6 max-sm:flex-col max-sm:items-stretch max-sm:gap-2 border-b border-[#E2DFDF] py-2">
                     <div>
                       <p className="text-sm font-medium leading-[21px]">Interface Language</p>
                       <p className="text-[12px] leading-[18px] text-black/50">Select display language for dashboard views</p>
                     </div>
                     <SelectField value={language} options={languages} onChange={setLanguage} />
                   </div>
-                  <div className="flex items-center justify-between gap-6 border-b border-[#E2DFDF] py-2">
+                  <div className="flex items-center justify-between gap-6 max-sm:flex-col max-sm:items-stretch max-sm:gap-2 border-b border-[#E2DFDF] py-2">
                     <div>
                       <p className="text-sm font-medium leading-[21px]">Default Currency</p>
                       <p className="text-[12px] leading-[18px] text-black/50">Applied across all financial and branch metrics</p>
                     </div>
                     <SelectField value={currency} options={currencies} onChange={setCurrency} />
                   </div>
-                  <div className="flex items-center justify-between gap-6 py-2">
+                  <div className="flex items-center justify-between gap-6 max-sm:flex-col max-sm:items-stretch max-sm:gap-2 py-2">
                     <div>
                       <p className="text-sm font-medium leading-[21px]">Default Landing View</p>
                       <p className="text-[12px] leading-[18px] text-black/50">First page opened after logging in</p>
@@ -273,16 +273,16 @@ export default function SettingsView({ onClose }) {
 
             {section === "notifications" && (
               <div className="flex flex-col gap-5">
-                <article className="rounded-2xl border border-[#E2DFDF] px-[25px] pt-[25px] pb-4">
+                <article className="rounded-2xl border border-[#E2DFDF] px-[25px] max-sm:px-4 pt-[25px] pb-4">
                   <h3 className="text-sm font-semibold leading-[21px]">Alert Schedule & Delivery</h3>
-                  <div className="mt-4 flex items-center justify-between gap-6 border-b border-[#E2DFDF] py-2">
+                  <div className="mt-4 flex items-center justify-between gap-6 max-sm:flex-col max-sm:items-stretch max-sm:gap-2 border-b border-[#E2DFDF] py-2">
                     <div>
                       <p className="text-sm font-medium leading-[21px]">Instant Critical Alerts</p>
                       <p className="text-[12px] leading-[18px] text-black/50">Immediate in-app & email notification when a branch breaches critical thresholds</p>
                     </div>
                     <Switch on={criticalAlerts} onToggle={() => setCriticalAlerts((value) => !value)} />
                   </div>
-                  <div className="flex items-center justify-between gap-6 py-2">
+                  <div className="flex items-center justify-between gap-6 max-sm:flex-col max-sm:items-stretch max-sm:gap-2 py-2">
                     <div>
                       <p className="text-sm font-medium leading-[21px]">Weekly Alerts Summary (Every Sunday)</p>
                       <p className="text-[12px] leading-[18px] text-black/50">Weekly summary of all branch alerts sent every Sunday at 09:00 AM</p>
@@ -290,16 +290,16 @@ export default function SettingsView({ onClose }) {
                     <Switch on={weeklySummary} onToggle={() => setWeeklySummary((value) => !value)} />
                   </div>
                 </article>
-                <article className="rounded-2xl border border-[#E2DFDF] px-[25px] pt-[25px] pb-4">
+                <article className="rounded-2xl border border-[#E2DFDF] px-[25px] max-sm:px-4 pt-[25px] pb-4">
                   <h3 className="text-sm font-semibold leading-[21px]">Monitoring Scope</h3>
-                  <div className="mt-4 flex items-center justify-between gap-6 border-b border-[#E2DFDF] py-2">
+                  <div className="mt-4 flex items-center justify-between gap-6 max-sm:flex-col max-sm:items-stretch max-sm:gap-2 border-b border-[#E2DFDF] py-2">
                     <div>
                       <p className="text-sm font-medium leading-[21px]">Monitored Branches</p>
                       <p className="text-[12px] leading-[18px] text-black/50">Choose whether to receive alerts for all branches or specific locations</p>
                     </div>
                     <SelectField value={scope} options={monitored} onChange={setScope} />
                   </div>
-                  <div className="flex items-center justify-between gap-6 py-2">
+                  <div className="flex items-center justify-between gap-6 max-sm:flex-col max-sm:items-stretch max-sm:gap-2 py-2">
                     <div>
                       <p className="text-sm font-medium leading-[21px]">Company-Wide Financial Alerts</p>
                       <p className="text-[12px] leading-[18px] text-black/50">Include overall alerts across all branches combined</p>
@@ -312,7 +312,7 @@ export default function SettingsView({ onClose }) {
 
             {section === "company" && (
               <div className="flex flex-col gap-5">
-                <article className="rounded-2xl border border-[#E2DFDF] px-[25px] py-[25px]">
+                <article className="rounded-2xl border border-[#E2DFDF] px-[25px] max-sm:px-4 py-[25px]">
                   <h3 className="text-sm font-semibold leading-[21px]">Department Leadership</h3>
                   <div className="mt-4 overflow-x-auto rounded-xl border border-[#E2DFDF]">
                     <table className={`table-fixed border-collapse text-left ${leaderColumns.widths ? "" : "w-[786px]"}`} style={leaderColumns.widths ? { width: columnTableWidth(leaderColumns.widths) } : undefined}>
@@ -343,13 +343,13 @@ export default function SettingsView({ onClose }) {
                   </div>
                 </article>
 
-                <article className="rounded-2xl border border-[#E2DFDF] px-[25px] py-[25px]">
-                  <div className="flex items-start justify-between gap-4">
+                <article className="rounded-2xl border border-[#E2DFDF] px-[25px] max-sm:px-4 py-[25px]">
+                  <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:gap-3">
                     <div className="min-w-0">
                       <h3 className="text-sm font-semibold leading-[21px]">Branches Directory</h3>
                       <p className="text-[12px] leading-[18px] text-black/50">Static branch records, operating hours, and manager contacts</p>
                     </div>
-                    <label className="flex h-9 w-[198px] shrink-0 items-center gap-3 rounded-xl border border-[#E2DFDF] bg-white px-2">
+                    <label className="flex h-9 w-[198px] shrink-0 items-center gap-3 rounded-xl border border-[#E2DFDF] bg-white px-2 max-sm:w-full">
                       <img src="/figma/search.svg" alt="" className="size-[18px] max-w-none" />
                       <input
                         value={branchQuery}

@@ -223,12 +223,12 @@ export default function AlertsView() {
         </button>
       </div>
 
-      <article className="mt-6 flex min-h-[765px] flex-col justify-between rounded-[20px] border border-[#E2DFDF] bg-white/80 p-6">
+      <article className="mt-6 flex min-h-0 flex-col justify-between rounded-[20px] border border-[#E2DFDF] bg-white/80 p-4 md:min-h-[765px] md:p-6">
         <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
             <h2 className="text-sm font-semibold leading-[1.5]">{tab === "archive" ? "Archive" : "Critical Alerts & Weekly Summary Feed"}</h2>
-            <div className="flex flex-wrap items-center gap-4">
-              <label className="flex h-9 w-[198px] items-center gap-3 overflow-hidden rounded-xl border border-[#E2DFDF] bg-white px-2">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+              <label className="flex h-9 w-full items-center gap-3 overflow-hidden rounded-xl border border-[#E2DFDF] bg-white px-2 sm:w-[198px]">
                 <img src="/figma/search.svg" alt="" className="size-[18px] max-w-none" />
                 <input
                   value={query}
@@ -237,8 +237,10 @@ export default function AlertsView() {
                   className="w-full bg-transparent text-sm font-medium leading-[1.5] text-[#4E505A] outline-none placeholder:text-[#4E505A]"
                 />
               </label>
-              <FilterMenu label="All Branches" options={branches} value={branch} onChange={setBranch} />
-              <FilterMenu label="All Types" options={types} value={type} onChange={setType} />
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+                <FilterMenu label="All Branches" options={branches} value={branch} onChange={setBranch} />
+                <FilterMenu label="All Types" options={types} value={type} onChange={setType} />
+              </div>
             </div>
           </div>
 
@@ -246,7 +248,7 @@ export default function AlertsView() {
             {rows.map((item) => (
               <article
                 key={item.id}
-                className="flex flex-wrap items-center gap-6 rounded-xl border border-[#E2DFDF] px-5 py-4"
+                className="flex flex-col gap-4 rounded-xl border border-[#E2DFDF] px-4 py-4 lg:flex-row lg:items-center lg:gap-6 lg:px-5"
               >
                 <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                   <div className="flex flex-wrap items-center gap-2">
@@ -259,15 +261,15 @@ export default function AlertsView() {
                   <h3 className="text-sm font-semibold leading-[1.5]">{item.title}</h3>
                   <p className="text-[12px] leading-[1.5] text-black/50">{item.body}</p>
                 </div>
-                <div className="flex items-center gap-5">
-                  <div className="flex min-w-[120px] flex-col items-end gap-0.5 text-right">
+                <div className="flex w-full items-center justify-between gap-3 border-t border-[#E2DFDF] pt-3 lg:w-auto lg:justify-start lg:gap-5 lg:border-t-0 lg:pt-0">
+                  <div className="flex min-w-0 flex-col gap-0.5 text-left lg:min-w-[120px] lg:items-end lg:text-right">
                     <p className={`text-sm font-semibold leading-normal ${tab === "archive" || !item.criticalValue ? "text-ink" : "text-[#B00020]"}`}>{item.value}</p>
                     <p className="text-[12px] leading-[1.5] text-black/50">{item.target}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setSelected(item)}
-                    className="inline-flex h-9 items-center justify-center rounded-xl border border-[#E2DFDF] bg-white p-3 text-sm font-medium leading-[1.5] text-[#4E505A]"
+                    className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-[#E2DFDF] bg-white px-3 text-sm font-medium leading-[1.5] text-[#4E505A] lg:h-9"
                   >
                     View Details
                   </button>
@@ -278,7 +280,7 @@ export default function AlertsView() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-3 pb-1">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 pt-3 pb-1 md:mt-0">
           <p className="text-[12px] leading-[1.5] text-black/50">Showing {rows.length} of {source.length} alerts</p>
           <div className="flex items-center gap-2">
             <span className="grid size-8 place-items-center rounded-lg border-[0.5px] border-[#E2DFDF]">
@@ -327,7 +329,7 @@ function AlertDrawer({ alert, neutral = false, onClose }) {
   return (
     <div className="fixed inset-0 z-50 bg-[rgba(6,6,6,0.4)]" onClick={onClose}>
       <aside
-        className="absolute top-0 right-0 flex h-full w-[480px] max-w-full flex-col rounded-tl-[20px] rounded-bl-[20px] bg-white shadow-[-12px_0_35px_rgba(0,0,0,0.05)]"
+        className="absolute top-0 right-0 flex h-full w-full flex-col rounded-tl-[20px] rounded-bl-[20px] bg-white shadow-[-12px_0_35px_rgba(0,0,0,0.05)] sm:w-[480px]"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-[#E2DFDF] px-6 py-5">

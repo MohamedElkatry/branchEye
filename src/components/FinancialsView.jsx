@@ -68,7 +68,7 @@ function BudgetMark() {
 }
 
 function CostTrack({ children, className = "" }) {
-  return <div className={`flex h-6 w-[219px] items-center rounded-lg bg-[#F6F6F6] py-0.5 ${className}`}>{children}</div>;
+  return <div className={`flex h-6 w-full max-w-[219px] items-center rounded-lg bg-[#F6F6F6] py-0.5 ${className}`}>{children}</div>;
 }
 
 export default function FinancialsView({
@@ -171,7 +171,8 @@ export default function FinancialsView({
             </p>
           </div>
         </div>
-        <div className="relative h-[248px]">
+        <div className="overflow-x-auto">
+        <div className="relative h-[248px] min-w-[790px]">
           <img src="/figma/financial-grid.svg" alt="" className="pointer-events-none absolute inset-x-0 top-[27px] h-[176px] w-full max-w-none" />
           <div className="absolute bottom-3 left-[calc(50%-7px)] flex h-[239px] -translate-x-1/2 items-end">
             {waterfall.map((item) => (
@@ -189,11 +190,12 @@ export default function FinancialsView({
             ))}
           </div>
         </div>
+        </div>
       </article>
 
-      <section className="mt-6 grid items-start gap-6 lg:grid-cols-2">
-        <article className="flex flex-col gap-4 rounded-[20px] bg-white/80 p-6">
-          <div className="flex items-start justify-between gap-3">
+      <section className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+        <article className="flex min-w-0 flex-col gap-4 rounded-[20px] bg-white/80 p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="w-[177px]">
               <h2 className="text-sm font-semibold leading-[1.5]">Cost Breakdown</h2>
               <p className="text-[12px] leading-[1.5] text-black/50">Nov2026</p>
@@ -209,14 +211,15 @@ export default function FinancialsView({
               </span>
             </div>
           </div>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-1">
-              <div className="flex w-[83px] flex-col gap-2">
+          <div className="max-xl:overflow-x-auto">
+          <div className="flex items-start justify-between gap-4 max-xl:min-w-[480px]">
+            <div className="flex min-w-0 flex-1 items-center gap-1">
+              <div className="flex w-[83px] shrink-0 flex-col gap-2">
                 {costs.map((item) => (
                   <span key={item.name} className="flex h-6 items-center text-[12px] font-medium leading-[1.5] text-[#4E505A]">{item.name}</span>
                 ))}
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
                 <CostTrack className="gap-[11px]">
                   <span className="h-6 w-24 rounded-l-lg bg-[#E7B0BA]" />
                   <BudgetMark />
@@ -249,7 +252,7 @@ export default function FinancialsView({
                 </CostTrack>
               </div>
             </div>
-            <div className="flex w-[165px] flex-col gap-2">
+            <div className="flex w-[165px] shrink-0 flex-col gap-2">
               {costs.map((item) => (
                 <div key={item.name} className="flex h-6 items-center justify-end gap-2 text-[12px] leading-[1.5]">
                   <span className="w-[60px] text-black/50">{item.amount}</span>
@@ -259,16 +262,17 @@ export default function FinancialsView({
               ))}
             </div>
           </div>
+          </div>
           <div className="flex h-10 items-center justify-between">
             <span className="text-sm font-medium leading-[1.5]">Total Cost</span>
             <span className="w-[101px] text-right text-[18px] font-semibold leading-[1.5]">3,880 K</span>
           </div>
         </article>
 
-        <article className="flex h-[343px] flex-col gap-4 overflow-hidden rounded-[20px] bg-white/80 p-6">
-          <div className="flex items-center justify-between gap-3">
+        <article className="flex h-[343px] min-w-0 flex-col gap-4 overflow-hidden rounded-[20px] bg-white/80 p-6 max-sm:h-auto">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-sm font-semibold leading-[1.5] whitespace-nowrap">Financial Trend Overview</h2>
-            <div className="flex items-center gap-1 text-[12px]">
+            <div className="flex flex-wrap items-center gap-1 text-[12px]">
               <span className="inline-flex items-center py-0.5 pr-2 pl-1 leading-4 text-ink">
                 <img src="/figma/trend-dot-sales.svg" alt="" className="size-3 max-w-none" />
                 Net Sales
@@ -283,7 +287,8 @@ export default function FinancialsView({
               </span>
             </div>
           </div>
-          <div className="flex gap-4">
+          <div className="max-lg:overflow-x-auto">
+          <div className="flex gap-4 max-lg:min-w-[540px]">
             <div className="flex h-[221px] flex-col justify-between pb-4 text-right text-[12px] leading-[1.5] text-black/50">
               <span className="font-medium">40K</span>
               <span>30K</span>
@@ -293,7 +298,7 @@ export default function FinancialsView({
             </div>
             <div className="min-w-0">
               <div className="relative h-[221px] w-[485px] max-w-full">
-                <img src="/figma/financial-trend.svg" alt="" className="absolute top-0 -left-[7.5px] max-w-none" />
+                <img src="/figma/financial-trend.svg" alt="" className="absolute top-0 -left-[7.5px] h-[247px] w-[calc(100%+7.5px)] max-w-none" />
               </div>
               <div className="flex w-[485px] max-w-full text-center text-[12px] leading-4 text-black/50">
                 {["5", "10", "15", "20", "25", "30"].map((label) => (
@@ -302,13 +307,14 @@ export default function FinancialsView({
               </div>
             </div>
           </div>
+          </div>
         </article>
       </section>
 
       <article className="mt-6 rounded-[20px] bg-white/80 p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-sm font-semibold leading-[1.5]">Cost Breakdown by Branch</h2>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <button
                 type="button"

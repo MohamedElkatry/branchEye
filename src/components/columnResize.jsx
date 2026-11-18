@@ -2,10 +2,45 @@ import { useLayoutEffect, useRef, useState } from "react";
 
 const MIN_WIDTH = 72;
 
+function contentWidths(table) {
+  const probe = table.cloneNode(true);
+  probe.querySelectorAll("colgroup").forEach((group) => group.remove());
+  probe.removeAttribute("style");
+  Object.assign(probe.style, {
+    position: "absolute",
+    visibility: "hidden",
+    pointerEvents: "none",
+    left: "0",
+    top: "0",
+    width: "max-content",
+    minWidth: "0",
+    tableLayout: "auto",
+  });
+  probe.querySelectorAll("th, td").forEach((cell) => {
+    cell.style.whiteSpace = "nowrap";
+    cell.style.width = "auto";
+  });
+  const host = table.parentElement;
+  const restorePosition = getComputedStyle(host).position === "static";
+  if (restorePosition) host.style.position = "relative";
+  host.appendChild(probe);
+  const widths = [...probe.querySelectorAll(":scope > thead > tr > th")].map((cell) => Math.ceil(cell.getBoundingClientRect().width));
+  probe.remove();
+  if (restorePosition) host.style.position = "";
+  return widths;
+}
+
 function readWidths(node, columnCount) {
-  if (!node) return null;
-  const next = [...node.querySelectorAll(":scope > tr > th")].map((cell) => Math.round(cell.getBoundingClientRect().width));
-  if (next.length !== columnCount || next.some((width) => width < 8)) return null;
+  const table = node?.closest("table");
+  if (!table) return null;
+  const natural = contentWidths(table);
+  if (natural.length !== columnCount || natural.some((width) => width < 8)) return null;
+  const fitted = natural.map((width) => Math.max(MIN_WIDTH, width));
+  const total = fitted.reduce((sum, width) => sum + width, 0);
+  const available = table.parentElement.clientWidth;
+  if (total >= available) return fitted;
+  const next = fitted.map((width) => Math.floor((width * available) / total));
+  next[next.length - 1] += available - next.reduce((sum, width) => sum + width, 0);
   return next;
 }
 
@@ -66,7 +101,7 @@ export function ColumnSizer({ widths }) {
 
 export function ResizableTh({ index, onResizeStart, className = "", children }) {
   return (
-    <th className={`relative ${className}`}>
+    <th className={`relative [&:last-child>[role=separator]]:right-0 ${className}`}>
       {children}
       <span
         role="separator"

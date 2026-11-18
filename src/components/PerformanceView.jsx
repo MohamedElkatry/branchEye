@@ -402,19 +402,23 @@ export default function PerformanceView({
         </div>
       </article>
 
-      <section className="mt-6 grid items-start gap-6 lg:grid-cols-2">
-        <article className="flex flex-col items-center gap-4 rounded-[20px] bg-white/80 p-6">
+      <section className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+        <article className="flex min-w-0 flex-col items-center gap-4 rounded-[20px] bg-white/80 p-6">
           <div className="w-full">
             <h2 className="text-sm font-semibold leading-[1.5]">Sales vs Budget by Branch</h2>
             <p className="text-[12px] leading-[1.5] text-black/50">Nov2026</p>
           </div>
-          <BranchBars rows={rows} mode="budget" />
+          <div className="w-full overflow-x-auto">
+            <div className="min-w-[440px]">
+              <BranchBars rows={rows} mode="budget" />
+            </div>
+          </div>
           <div className="flex items-center gap-4 text-[12px] font-medium leading-[1.5] text-[#4E505A]">
             <span className="inline-flex items-center gap-2"><span className="size-1.5 rounded-full bg-[#4280A7]" />Sales</span>
             <span className="inline-flex items-center gap-2"><span className="size-1.5 rounded-full bg-[#C4D8E4]" />Budget</span>
           </div>
         </article>
-        <article className="flex flex-col items-center gap-4 rounded-[20px] bg-white/80 p-6">
+        <article className="flex min-w-0 flex-col items-center gap-4 rounded-[20px] bg-white/80 p-6">
           <div className="flex w-full items-start justify-between gap-3">
             <div>
               <h2 className="text-sm font-semibold leading-[1.5]">{lflMode === "growth" ? "Branch Growth LFL" : "Branches Sales LFL"}</h2>
@@ -437,7 +441,11 @@ export default function PerformanceView({
               </button>
             </div>
           </div>
-          {lflMode === "growth" ? <GrowthChart rows={rows} /> : <BranchBars rows={rows} mode="lfl" />}
+          <div className="w-full overflow-x-auto">
+            <div className="min-w-[440px]">
+              {lflMode === "growth" ? <GrowthChart rows={rows} /> : <BranchBars rows={rows} mode="lfl" />}
+            </div>
+          </div>
           {lflMode === "sales" && (
             <div className="flex items-center gap-4 text-[12px] leading-[1.5] text-black/50">
               <span className="inline-flex items-center gap-2"><span className="size-1.5 rounded-full bg-[#32607D]" />Nov2026</span>

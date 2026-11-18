@@ -470,7 +470,7 @@ export default function ReportsView() {
               {expanded ? "Show Less" : "See All Templates"}
             </button>
           </div>
-          <div className="mt-4 grid grid-cols-4 gap-6">
+          <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
             {visibleTemplates.map((item) => (
               <TemplateCard key={item.title} item={item} onOpen={() => setPreview({ name: item.title, branches: "All Branches" })} onCustomize={() => { setReportTitle(""); setSaveTemplate(true); setShowScheduleFields(true); setRangeOpen(false); setCustomize(true); }} />
             ))}
@@ -485,7 +485,7 @@ export default function ReportsView() {
             {tab === "all" && <p className="text-[12px] leading-[18px] text-black/50">Recently generated and shared reports</p>}
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <label className="flex h-9 w-[198px] items-center gap-3 overflow-hidden rounded-xl border border-[#E2DFDF] px-2">
+            <label className="flex h-9 w-[198px] items-center gap-3 overflow-hidden rounded-xl border border-[#E2DFDF] px-2 max-sm:w-full">
               <img src="/figma/search.svg" alt="" className="size-[18px] max-w-none" />
               <input
                 value={query}
@@ -660,7 +660,7 @@ export default function ReportsView() {
           )}
         </div>
 
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-[12px] leading-[18px] text-black/50">
             {tab === "all"
               ? `Showing ${pageRows.length} of ${query.trim() || branchFilter !== "All Branches" || sourceFilter !== "All Sources" ? rows.length : 24} reports`
@@ -691,8 +691,8 @@ export default function ReportsView() {
       </section>
 
       {preview && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-[rgba(6,6,6,0.4)] p-6" onClick={() => setPreview(null)}>
-          <section className="w-[860px] overflow-hidden rounded-2xl bg-white" onClick={(event) => event.stopPropagation()}>
+        <div className="fixed inset-0 z-50 grid grid-cols-[minmax(0,1fr)] place-items-center bg-[rgba(6,6,6,0.4)] p-6 max-sm:p-4" onClick={() => setPreview(null)}>
+          <section className="w-[860px] max-w-full overflow-hidden rounded-2xl bg-white max-lg:max-h-[calc(100vh-2rem)] max-lg:overflow-y-auto" onClick={(event) => event.stopPropagation()}>
             <header className="flex h-[72px] items-center justify-between border-b border-[#E2DFDF] px-6">
               <h2 className="text-lg font-semibold leading-[27px]">{preview.name}</h2>
               <div className="flex items-center gap-2">
@@ -702,11 +702,11 @@ export default function ReportsView() {
               </div>
             </header>
             <div className="px-6 py-6">
-              <div className="flex items-center justify-between text-[12px] leading-[18px] text-black/50">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[12px] leading-[18px] text-black/50">
                 <span>Prepared Finance Manager</span>
                 <span>Period: {dateRange} · {preview.branches}</span>
               </div>
-              <div className="mt-3 grid grid-cols-3 gap-2.5">
+              <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                 {[["Net Sales", "3,530K SAR"], ["Operating Contribution", "923K SAR"], ["Operating Margin", "26.1%"]].map(([label, value]) => (
                   <article key={label} className="rounded-xl border border-[#E2DFDF] px-3 py-3">
                     <p className="text-[12px] leading-[18px] text-black/50">{label}</p>
@@ -744,7 +744,7 @@ export default function ReportsView() {
       {customize && (
         <div className="fixed inset-0 z-50 bg-[rgba(6,6,6,0.4)]" onClick={() => setCustomize(false)}>
           <aside
-            className="absolute inset-y-0 right-0 flex w-[480px] flex-col bg-white"
+            className="absolute inset-y-0 right-0 flex w-[480px] flex-col bg-white max-sm:w-full"
             onClick={(event) => {
               event.stopPropagation();
               if (rangeRef.current && !rangeRef.current.contains(event.target)) setRangeOpen(false);
@@ -892,8 +892,8 @@ export default function ReportsView() {
       )}
 
       {scheduleOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-[rgba(6,6,6,0.4)] p-6" onClick={() => setScheduleOpen(false)}>
-          <section className="w-[597px] rounded-2xl bg-white p-6" onClick={(event) => event.stopPropagation()}>
+        <div className="fixed inset-0 z-50 grid grid-cols-[minmax(0,1fr)] place-items-center bg-[rgba(6,6,6,0.4)] p-6 max-sm:p-4" onClick={() => setScheduleOpen(false)}>
+          <section className="w-[597px] max-w-full rounded-2xl bg-white p-6 max-lg:max-h-[calc(100vh-2rem)] max-lg:overflow-y-auto max-sm:p-4" onClick={(event) => event.stopPropagation()}>
             <header className="flex items-start justify-between">
               <h2 className="text-[22px] font-semibold leading-[33px]">Schedule Automated Report</h2>
               <button type="button" onClick={() => setScheduleOpen(false)} aria-label="Close" className="grid size-8 place-items-center">
@@ -901,7 +901,7 @@ export default function ReportsView() {
               </button>
             </header>
             <p className="mt-4 text-sm font-medium leading-[21px]">Step 1 Report & Scope</p>
-            <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <label className="text-[12px] leading-[18px] text-black/50">
                 Report Template
                 <select value={scheduleTemplate} onChange={(event) => setScheduleTemplate(event.target.value)} className="mt-1 flex h-10 w-full items-center rounded-xl border border-[#E2DFDF] px-3 text-sm text-ink">
@@ -919,7 +919,7 @@ export default function ReportsView() {
             <div className="mt-4">
               <Frequency value={scheduleFreq} onChange={setScheduleFreq} />
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <label className="text-[12px] leading-[18px] text-black/50">
                 Day of Week
                 <div className="mt-1 flex h-10 items-center rounded-xl border border-[#E2DFDF] px-3 text-sm text-ink">Every Sunday</div>

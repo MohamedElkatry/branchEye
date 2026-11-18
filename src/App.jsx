@@ -112,7 +112,22 @@ function Delta({ positive, children }) {
   );
 }
 
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const list = window.matchMedia(query);
+    const onChange = () => setMatches(list.matches);
+    onChange();
+    list.addEventListener("change", onChange);
+    return () => list.removeEventListener("change", onChange);
+  }, [query]);
+  return matches;
+}
+
 export default function App() {
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [activeNav, setActiveNav] = useState("overview");
   const [period, setPeriod] = useState(periods[0]);
   const [branch, setBranch] = useState("All branches");
@@ -120,7 +135,7 @@ export default function App() {
   const [alertTab, setAlertTab] = useState("All");
   const [openMenu, setOpenMenu] = useState(null);
   const [aiOpen, setAiOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [collapsedPreference, setSidebarCollapsed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const menusRef = useRef(null);
@@ -139,6 +154,21 @@ export default function App() {
   useEffect(() => {
     document.title = activeNav === "performance" ? "Branches Performance" : "BranchEye";
   }, [activeNav]);
+
+  useEffect(() => {
+    if (isDesktop) setMobileNavOpen(false);
+  }, [isDesktop]);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return undefined;
+    const onKey = (event) => {
+      if (event.key === "Escape") setMobileNavOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileNavOpen]);
+
+  const sidebarCollapsed = collapsedPreference && isDesktop;
 
   const current = navItems.find((item) => item.id === activeNav) ?? settingsItem;
 
@@ -216,7 +246,8 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen bg-[#F8F6F6] text-ink">
-      <aside className={`sticky top-0 flex h-screen shrink-0 flex-col justify-between border-r-[0.5px] border-[#E2DFDF] bg-white shadow-[2px_0_6px_rgba(184,153,235,0.05)] ${sidebarCollapsed ? "w-[72px]" : "w-[218px]"}`}>
+      {mobileNavOpen && <div className="fixed inset-0 z-40 bg-[rgba(6,6,6,0.4)] lg:hidden" onClick={() => setMobileNavOpen(false)} />}
+      <aside className={`sticky top-0 flex h-screen shrink-0 flex-col justify-between border-r-[0.5px] max-lg:overflow-y-auto border-[#E2DFDF] bg-white shadow-[2px_0_6px_rgba(184,153,235,0.05)] max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:transition-transform ${mobileNavOpen ? "" : "max-lg:-translate-x-full"} ${sidebarCollapsed ? "w-[72px]" : "w-[218px]"}`}>
         <div className="flex flex-col gap-4">
           <div className={`flex h-16 items-center gap-2 py-5 ${sidebarCollapsed ? "justify-center px-3" : "pl-[22px] pr-[18px]"}`}>
             <img src="/figma/logo.png" alt="" className="size-8 shrink-0 rounded-full object-cover" />
@@ -237,6 +268,7 @@ export default function App() {
                   title={item.label}
                   onClick={() => {
                     setSettingsOpen(false);
+                    setMobileNavOpen(false);
                     setActiveNav(item.id);
                   }}
                   className={`flex h-[41px] items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${
@@ -254,7 +286,10 @@ export default function App() {
           <button
             type="button"
             title={settingsItem.label}
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => {
+              setMobileNavOpen(false);
+              setSettingsOpen(true);
+            }}
             className={`flex h-[41px] items-center gap-3 rounded-lg py-2.5 text-sm font-medium ${
               sidebarCollapsed ? "justify-center" : "px-6"
             } ${settingsOpen ? "bg-[#E3ECF2] text-primary" : "text-[#4E505A] hover:bg-[#F6F6F6]"}`}
@@ -276,22 +311,31 @@ export default function App() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-      <header className="relative z-20 flex h-16 items-center justify-between border-b-[0.5px] border-[#E2DFDF] bg-white px-6">
-        <div className="flex items-center gap-3">
+      <header className="relative z-20 flex h-16 items-center justify-between gap-3 border-b-[0.5px] border-[#E2DFDF] bg-white px-4 md:px-6">
+        <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
-            onClick={() => setSidebarCollapsed((value) => !value)}
-            aria-pressed={sidebarCollapsed}
-            aria-label={sidebarCollapsed ? "Open sidebar" : "Close sidebar"}
-            className="grid size-8 place-items-center rounded-xl border-[0.5px] border-[#E2DFDF] bg-[#F6F6F6]"
+            onClick={() => (isDesktop ? setSidebarCollapsed((value) => !value) : setMobileNavOpen(true))}
+            aria-pressed={isDesktop ? sidebarCollapsed : mobileNavOpen}
+            aria-label={isDesktop ? (sidebarCollapsed ? "Open sidebar" : "Close sidebar") : "Open menu"}
+            className="grid size-8 shrink-0 place-items-center rounded-xl border-[0.5px] border-[#E2DFDF] bg-[#F6F6F6] max-lg:size-10"
           >
             <img src="/figma/layout.svg" alt="" className="size-6 max-w-none" />
           </button>
-          <h1 className="text-[18px] font-semibold leading-[1.5] text-ink">{pageTitle}</h1>
+          <h1 className="truncate text-[18px] font-semibold leading-[1.5] text-ink">{pageTitle}</h1>
         </div>
 
-        <div className="flex items-center gap-4">
-        <label className="flex h-10 w-[258px] items-center gap-3 overflow-hidden rounded-xl bg-[#F6F6F6] px-2">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+        <button
+          type="button"
+          onClick={() => setMobileSearchOpen((value) => !value)}
+          aria-label="Search"
+          aria-expanded={mobileSearchOpen}
+          className="grid size-10 place-items-center rounded-xl bg-[#F6F6F6] md:hidden"
+        >
+          <img src="/figma/search.svg" alt="" className="size-[18px] max-w-none" />
+        </button>
+        <label className={`h-10 w-[258px] items-center gap-3 overflow-hidden rounded-xl bg-[#F6F6F6] px-2 max-md:absolute max-md:inset-x-4 max-md:top-[72px] max-md:w-auto max-md:shadow-[0_8px_24px_rgba(38,38,38,0.12)] ${mobileSearchOpen ? "flex" : "hidden md:flex"}`}>
           <img src="/figma/search.svg" alt="" className="size-[18px] max-w-none" />
           <input
             value={search}
@@ -312,7 +356,7 @@ export default function App() {
             <img src="/figma/bell.svg" alt="" className="size-6 max-w-none" />
           </button>
           {notesOpen && (
-            <div className="absolute right-0 top-[60px] w-[360px] overflow-hidden rounded-2xl border border-line bg-white shadow-[0_12px_32px_rgba(23,48,70,0.12)]">
+            <div className="absolute right-0 top-[60px] w-[360px] overflow-hidden rounded-2xl max-sm:fixed max-sm:inset-x-4 max-sm:top-[72px] max-sm:w-auto border border-line bg-white shadow-[0_12px_32px_rgba(23,48,70,0.12)]">
               <div className="flex items-center justify-between px-4 py-3">
                 <p className="text-sm font-semibold text-ink">Notifications</p>
                 <button type="button" className="text-xs text-muted">
@@ -331,21 +375,22 @@ export default function App() {
             </div>
           )}
         </div>
-        <span className="grid size-10 place-items-center rounded-xl bg-[#E3ECF2] text-[12px] font-medium leading-[1.5] text-primary">
+        <span className="grid size-10 place-items-center rounded-xl bg-[#E3ECF2] text-[12px] font-medium leading-[1.5] text-primary max-sm:hidden">
           ME
         </span>
         <button
           type="button"
           onClick={() => setAiOpen(true)}
-          className="inline-flex h-10 w-[95px] items-center justify-center gap-2 rounded-xl bg-primary px-2 text-sm font-medium text-white hover:bg-primary-hover"
+          aria-label="Ask AI"
+          className="inline-flex h-10 w-[95px] items-center justify-center gap-2 rounded-xl bg-primary px-2 text-sm font-medium text-white hover:bg-primary-hover max-sm:w-10"
         >
           <img src="/figma/ai.svg" alt="" className="size-[18px] max-w-none" />
-          Ask AI
+          <span className="max-sm:hidden">Ask AI</span>
         </button>
         </div>
       </header>
 
-        <main className="min-w-0 flex-1 px-6 pb-6 pt-[23px]">
+        <main className="min-w-0 flex-1 px-4 pb-6 pt-[23px] md:px-6">
           {activeNav === "performance" ? (
             <PerformanceView
               period={period}
@@ -431,11 +476,11 @@ export default function App() {
                 ))}
               </section>
 
-              <section className="mt-6 grid items-stretch gap-6 xl:grid-cols-[minmax(0,723fr)_minmax(280px,421fr)]">
+              <section className="mt-6 grid grid-cols-1 items-stretch gap-6 xl:grid-cols-[minmax(0,723fr)_minmax(280px,421fr)]">
                 <article className="flex h-[306px] flex-col gap-4 overflow-hidden rounded-[20px] bg-white/80 p-6">
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <h2 className="text-sm font-medium leading-[1.5]">Sales trends</h2>
-                    <div className="flex items-center gap-4 text-[12px] leading-4 text-ink">
+                    <div className="flex flex-wrap items-center gap-4 text-[12px] leading-4 text-ink max-sm:gap-2">
                       <span className="inline-flex items-center py-0.5 pl-1 pr-2">
                         <img src="/figma/dot.svg" alt="" className="size-3 max-w-none" />
                         This Month
@@ -478,9 +523,9 @@ export default function App() {
                       return (
                       <li key={item.name} className="flex items-center gap-1">
                         <span className="w-[83px] text-[12px] font-medium leading-[1.5] text-[#4E505A]">{item.name}</span>
-                        <span className="flex h-6 flex-1 items-center">
+                        <span className="flex h-6 min-w-0 flex-1 items-center">
                           <span
-                            className="flex h-6 items-center rounded-lg px-2 text-[12px] font-normal leading-[1.5] text-white"
+                            className="flex h-6 max-w-full items-center rounded-lg px-2 text-[12px] font-normal leading-[1.5] text-white"
                             style={{ width: bar.width, backgroundColor: bar.color }}
                           >
                             {item.share}%
@@ -497,8 +542,8 @@ export default function App() {
                 </article>
               </section>
 
-              <section className="mt-6 grid items-stretch gap-6 xl:grid-cols-[minmax(0,723fr)_minmax(280px,421fr)]">
-                <article className="rounded-[20px] bg-white/80 p-6">
+              <section className="mt-6 grid grid-cols-1 items-stretch gap-6 xl:grid-cols-[minmax(0,723fr)_minmax(280px,421fr)]">
+                <article className="min-w-0 rounded-[20px] bg-white/80 p-6">
                   <div className="mb-4 flex h-[21px] items-center justify-between">
                     <h2 className="text-sm font-semibold leading-[1.5]">Branchs summary</h2>
                     <button
@@ -655,7 +700,7 @@ function AiDrawer({ onClose }) {
   }
 
   return (
-    <aside className={`fixed inset-y-0 right-0 z-40 flex flex-col bg-[#F8F6F6] shadow-[-12px_0_32px_rgba(23,48,70,0.06)] ${wide ? "w-[480px]" : "w-[316px]"}`}>
+    <aside className={`fixed inset-y-0 right-0 z-40 flex flex-col bg-[#F8F6F6] shadow-[-12px_0_32px_rgba(23,48,70,0.06)] max-sm:w-full ${wide ? "w-[480px]" : "w-[316px]"}`}>
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-[#EDEAEA] px-5">
         <div className="flex items-center gap-2 text-sm font-semibold text-ink">
           <Icon name="spark" className="h-[18px] w-[18px] text-primary" />
