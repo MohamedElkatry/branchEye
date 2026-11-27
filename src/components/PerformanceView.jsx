@@ -12,7 +12,7 @@ const growthBars = {
 };
 
 const sortColumns = [
-  { key: "salesSar", label: "Sales (SAR)" },
+  { key: "netSales", label: "Net Sales" },
   { key: "budget", label: "Budget Achievement %" },
   { key: "aov", label: "AOV" },
   { key: "totalCost", label: "Total Cost (SAR)" },
@@ -171,7 +171,7 @@ export default function PerformanceView({
   menusRef,
 }) {
   const [sort, setSort] = useState(null);
-  const [lflMode, setLflMode] = useState("growth");
+  const [lflMode, setLflMode] = useState("sales");
   const [copied, setCopied] = useState(false);
   const [shareText, setShareText] = useState("");
   const [selectedBranch, setSelectedBranch] = useState(null);
@@ -361,7 +361,7 @@ export default function PerformanceView({
                       </button>
                     </td>
                     <td className="px-3">
-                      <div className="text-sm font-normal leading-[1.5]">{formatNumber(item.salesSar)}</div>
+                      <div className="text-sm font-normal leading-[1.5]">{formatNumber(item.netSales)}</div>
                       <div className="text-[12px] leading-[1.5] text-black/50">
                         {formatNumber(item.orders)} {item.ordersWord}
                       </div>

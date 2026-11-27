@@ -40,24 +40,24 @@ const history = [
   ["Monthly Executive P&L", "All Branches", "Auto-Scheduled", "Private", "Nov 01, 2026", "PDF"],
   ["Weekly COGS & Waste Audit", "All Branches", "You", "Private", "Nov 01, 2026", "XLSX"],
   ["Branch Profitability Ranking", "All Branches", "You", "Private", "Nov 01, 2026", "XLSX"],
-  ["Daily Sales Snapshot", "Riyadh 01, Jeddah 02", "You", "Private", "Nov 01, 2026", "PDF"],
+  ["Daily Sales Snapshot", "Riyadh 01, Jeddah 01", "You", "Private", "Nov 01, 2026", "PDF"],
   ["Financial Forecast Outlook", "Jeddah 01", "Finance Manager", "Shared(2)", "Nov 01, 2026", "XLSX"],
   ["Executive P&L Summary", "All Branches", "Finance Manager", "Shared(3)", "Nov 01, 2026", "XLSX"],
   ["Branch Profitability Ranking", "All Branches", "You", "Private", "Oct 01, 2026", "XLSX"],
 ];
 
 const schedules = [
-  ["COGS & Waste Audit", "Weekly · Sunday", "09:00 AM", "Riyadh 01, Jeddah 02", "Private", "Nov 20, 2026", "PDF"],
+  ["COGS & Waste Audit", "Weekly · Sunday", "09:00 AM", "Riyadh 01, Jeddah 01", "Private", "Nov 20, 2026", "PDF"],
   ["Daily Sales Snapshot", "Weekly · Sunday", "09:00 AM", "All Branches", "Private", "Nov 25, 2026", "XLSX"],
   ["Monthly Executive P&L", "Monthly · 1st", "09:00 AM", "All Branches", "Private", "Dec 01, 2026", "XLSX"],
   ["Branch Profitability Ranking", "Monthly · 1st", "09:00 AM", "All Branches", "Shared(2)", "Dec 01, 2026", "PDF"],
 ];
 
 const previewRows = [
-  ["Riyadh 01", "1,510K", "430K", "350K", "180K", "437K", "28.9%"],
+  ["Riyadh 02", "1,510K", "430K", "350K", "180K", "437K", "28.9%"],
   ["Jeddah 01", "2,120K", "580K", "410K", "250K", "716K", "33.8%"],
   ["Dammam 01", "910K", "260K", "240K", "105K", "228K", "25.1%"],
-  ["Jeddah 02", "910K", "260K", "240K", "105K", "228K", "25.1%"],
+  ["Riyadh 01", "500K", "150K", "260K", "65K", "-10K", "-2.0%"],
   ["Total", "3,530K", "990K", "910K", "420K", "923K", "26.1%"],
 ];
 
@@ -70,7 +70,7 @@ const metricsByGroup = {
   "Operations & Labor": ["Labor"],
 };
 
-const branchOptions = ["All Branches", "Riyadh 01", "Jeddah 01", "Jeddah 02", "Dammam 01"];
+const branchOptions = ["All Branches", "Riyadh 01", "Riyadh 02", "Jeddah 01", "Dammam 01"];
 const pageSize = 7;
 
 function downloadFile(filename, lines) {
@@ -196,8 +196,8 @@ function Glyph({ name }) {
 function TemplateCard({ item, onOpen, onCustomize }) {
   return (
     <article className="flex h-[166px] flex-col justify-between rounded-2xl border border-[#E2DFDF] bg-white p-4">
-      <div className="flex gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#E3ECF2] text-primary">
+      <div className="flex gap-2">
+        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[#E3ECF2] text-primary">
           <Glyph name={item.icon} />
         </span>
         <div className="min-w-0">
@@ -282,7 +282,7 @@ export default function ReportsView() {
   const [rangeEnd, setRangeEnd] = useState("2026-10-31");
   const [rangeOpen, setRangeOpen] = useState(false);
   const rangeRef = useRef(null);
-  const [branchChips, setBranchChips] = useState(["Riyadh 01", "Jeddah 02"]);
+  const [branchChips, setBranchChips] = useState(["Riyadh 01", "Jeddah 01"]);
   const [branchQuery, setBranchQuery] = useState("");
   const [branchMenu, setBranchMenu] = useState(false);
   const [scheduleDay, setScheduleDay] = useState("Every Sunday");
