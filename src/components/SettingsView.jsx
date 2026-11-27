@@ -5,14 +5,7 @@ const sections = [
   { id: "account", group: "Account", label: "Account & Security" },
   { id: "notifications", group: "Account", label: "Notifications" },
   { id: "company", group: "Organization", label: "Company & Branches" },
-  { id: "targets", group: "Operations", label: "Targets & Thresholds" },
-];
-
-const thresholdRows = [
-  { id: "waste", label: "Food Waste", hint: "Critical alert when waste cost exceeds this share of net sales", prefix: "≤", value: "5.0", unit: "% of net sales" },
-  { id: "margin", label: "Operating Margin", hint: "Critical alert when consolidated operating margin falls below", prefix: "≥", value: "24.0", unit: "%" },
-  { id: "weekly", label: "Weekly Net Sales Target", hint: "Weekly summary compares all-branch net sales against this target", prefix: "", value: "1,260", unit: "K SAR" },
-  { id: "budget", label: "Monthly Budget Achievement", hint: "Branches below this level are flagged in performance views", prefix: "≥", value: "100", unit: "%" },
+  { id: "targets", group: "Operations", label: "Targets & Thresholds", placeholder: true },
 ];
 
 const leaders = [
@@ -119,7 +112,6 @@ export default function SettingsView({ onClose }) {
   const [dialog, setDialog] = useState(null);
   const [branchQuery, setBranchQuery] = useState("");
   const [contact, setContact] = useState(null);
-  const [thresholds, setThresholds] = useState(() => Object.fromEntries(thresholdRows.map((row) => [row.id, row.value])));
   const leaderColumns = useResizableColumns(5);
   const directoryColumns = useResizableColumns(4);
 
@@ -147,10 +139,6 @@ export default function SettingsView({ onClose }) {
       title: "Company, Branches & Data Sources",
       subtitle: "Read-only directory of department leads, branch records, and internal data feeds",
     },
-    targets: {
-      title: "Targets & Thresholds",
-      subtitle: "Set the operating targets and alert thresholds used across branches",
-    },
   }[section];
 
   const branchesShown = directory.filter((item) => {
@@ -176,7 +164,7 @@ export default function SettingsView({ onClose }) {
                       <button
                         key={item.id}
                         type="button"
-                        onClick={() => setSection(item.id)}
+                        onClick={() => { if (!item.placeholder) setSection(item.id); }}
                         className={`flex h-10 w-full items-center rounded-xl px-3 text-left text-sm leading-[21px] max-md:w-auto max-md:whitespace-nowrap ${section === item.id ? "bg-white font-semibold text-ink" : "font-medium text-[#4E505A] hover:bg-white/70"}`}
                       >
                         {item.label}
@@ -405,33 +393,6 @@ export default function SettingsView({ onClose }) {
                     </table>
                     {branchesShown.length === 0 && <p className="py-6 text-center text-sm text-muted">No branches match this search.</p>}
                   </div>
-                </article>
-              </div>
-            )}
-
-            {section === "targets" && (
-              <div className="flex flex-col gap-5">
-                <article className="rounded-2xl border border-[#E2DFDF] px-[25px] max-sm:px-4 pt-[25px] pb-4">
-                  <h3 className="text-sm font-semibold leading-[21px]">Alert Thresholds</h3>
-                  {thresholdRows.map((row, index) => (
-                    <div key={row.id} className={`${index === 0 ? "mt-4 " : ""}flex items-center justify-between gap-6 max-sm:flex-col max-sm:items-stretch max-sm:gap-2 py-2 ${index < thresholdRows.length - 1 ? "border-b border-[#E2DFDF]" : ""}`}>
-                      <div>
-                        <p className="text-sm font-medium leading-[21px]">{row.label}</p>
-                        <p className="text-[12px] leading-[18px] text-black/50">{row.hint}</p>
-                      </div>
-                      <label className="flex h-10 w-[240px] shrink-0 items-center gap-2 rounded-xl border border-[#E2DFDF] bg-white px-3 text-sm font-medium text-ink max-sm:w-full">
-                        {row.prefix && <span className="text-black/50">{row.prefix}</span>}
-                        <input
-                          value={thresholds[row.id]}
-                          onChange={(event) => setThresholds((current) => ({ ...current, [row.id]: event.target.value }))}
-                          inputMode="decimal"
-                          aria-label={row.label}
-                          className="min-w-0 flex-1 bg-transparent outline-none"
-                        />
-                        <span className="whitespace-nowrap text-[12px] text-black/50">{row.unit}</span>
-                      </label>
-                    </div>
-                  ))}
                 </article>
               </div>
             )}
