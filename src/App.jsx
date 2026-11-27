@@ -470,7 +470,7 @@ export default function App() {
                 {cards.map((card, index) => (
                   <article key={card.label} className={`flex flex-col gap-2 rounded-[20px] border-[0.2px] border-[#E2DFDF] px-4 py-6 ${index % 2 === 0 ? "bg-[#E3ECF2]" : "bg-[#ECF2F6]"}`}>
                     <p className="text-sm font-medium leading-[1.5] text-ink">{card.label}</p>
-                    <p className="text-[24px] font-semibold leading-[1.5]">{card.value}</p>
+                    <p className="whitespace-nowrap text-[clamp(18px,1.5vw,24px)] font-semibold leading-[1.5]">{card.value}</p>
                     <Delta positive={card.positive}>{card.delta}</Delta>
                   </article>
                 ))}

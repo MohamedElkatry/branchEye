@@ -47,12 +47,41 @@ function readWidths(node, columnCount) {
 export function useResizableColumns(columnCount) {
   const headRef = useRef(null);
   const widthsRef = useRef(null);
+  const userResizedRef = useRef(false);
+  const observedRef = useRef(null);
+  const observerRef = useRef(null);
+  const lastWidthRef = useRef(0);
   const [widths, setWidths] = useState(null);
 
   if (widths && widths.length !== columnCount) {
     widthsRef.current = null;
     setWidths(null);
   }
+
+  useLayoutEffect(() => {
+    const host = headRef.current?.closest("table")?.parentElement ?? null;
+    if (host !== observedRef.current) {
+      observerRef.current?.disconnect();
+      observedRef.current = host;
+      lastWidthRef.current = host?.clientWidth ?? 0;
+      if (host && typeof ResizeObserver !== "undefined") {
+        observerRef.current = new ResizeObserver(() => {
+          const width = host.clientWidth;
+          if (width === lastWidthRef.current || userResizedRef.current) return;
+          lastWidthRef.current = width;
+          widthsRef.current = null;
+          setWidths(null);
+        });
+        observerRef.current.observe(host);
+      }
+    }
+  });
+
+  useLayoutEffect(() => () => {
+    observerRef.current?.disconnect();
+    observerRef.current = null;
+    observedRef.current = null;
+  }, []);
 
   useLayoutEffect(() => {
     if (widthsRef.current?.length === columnCount) return;
@@ -64,6 +93,7 @@ export function useResizableColumns(columnCount) {
 
   function onResizeStart(index, event) {
     if (!widthsRef.current) return;
+    userResizedRef.current = true;
     const startX = event.clientX;
     const start = [...widthsRef.current];
     function move(moveEvent) {
